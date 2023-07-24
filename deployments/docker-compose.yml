@@ -1,0 +1,7 @@
+services:
+  access-governance-bot:
+    build:
+      context: ..
+      dockerfile: ./cmd/access_governance_bot/Dockerfile
+    env_file:
+      - ~/.access-governance-system.env

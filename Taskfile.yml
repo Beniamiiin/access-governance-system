@@ -1,0 +1,14 @@
+# https://taskfile.dev
+
+version: '3'
+
+tasks:
+  up:
+    desc: Start system
+    cmds:
+      - docker-compose -f ./deployments/docker-compose.yml up --force-recreate --build -d
+
+  down:
+    desc: Stop system
+    cmds:
+      - docker-compose -f ./deployments/docker-compose.yml down
