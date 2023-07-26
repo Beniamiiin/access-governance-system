@@ -55,7 +55,7 @@ func main() {
 
 func settingUpHealthCheckServer(logger *zap.SugaredLogger) {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/healthcheck", healthCheckHandler)
+	mux.HandleFunc("/access-governance-bot/healthcheck", healthCheckHandler)
 
 	server := &http.Server{Addr: ":8080", Handler: mux}
 
