@@ -54,7 +54,10 @@ func main() {
 }
 
 func settingUpHealthCheckServer(logger *zap.SugaredLogger) {
-	server := &http.Server{Addr: ":8080", Handler: http.HandlerFunc(handler)}
+	mux := http.NewServeMux()
+	mux.HandleFunc("/healthcheck", healthCheckHandler)
+
+	server := &http.Server{Addr: ":8080", Handler: mux}
 
 	if err := server.ListenAndServe(); err != http.ErrServerClosed {
 		logger.Errorw("failed to start http server", "error", err)
@@ -76,4 +79,6 @@ func settingUpHealthCheckServer(logger *zap.SugaredLogger) {
 	logger.Info("shutting down")
 }
 
-func handler(w http.ResponseWriter, r *http.Request) {}
+func healthCheckHandler(w http.ResponseWriter, r *http.Request) {
+	_, _ = w.Write([]byte("I'm alive"))
+}
