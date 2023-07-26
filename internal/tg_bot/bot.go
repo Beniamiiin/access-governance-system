@@ -22,6 +22,7 @@ func NewBot(commands []commands.Command, handler handlers.CommandHandler) Bot {
 }
 
 func (b *bot) Start(config configs.AccessGovernanceBotConfig, logger *zap.SugaredLogger) {
+	logger.Info("creating bot")
 	bot, updates, err := b.createBot(config)
 	if err != nil {
 		logger.Fatalf("failed to create bot: %v", err)
@@ -47,7 +48,7 @@ func (b *bot) createBot(config configs.AccessGovernanceBotConfig) (*tgbotapi.Bot
 		return nil, nil, err
 	}
 
-	bot.Debug = config.App.IsDevEnvironment()
+	bot.Debug = true
 
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = config.Bot.UpdateTimeout

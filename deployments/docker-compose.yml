@@ -5,3 +5,5 @@ services:
       dockerfile: ./cmd/access_governance_bot/Dockerfile
     env_file:
       - ~/.access-governance-system.env
+    ports:
+      - 8080:8080
