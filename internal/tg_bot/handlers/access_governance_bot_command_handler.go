@@ -1,19 +1,26 @@
 package handlers
 
 import (
+	"access_governance_system/configs"
 	"access_governance_system/internal/db/repositories"
 	"access_governance_system/internal/tg_bot/commands"
+	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"go.uber.org/zap"
 )
 
 type accessGovernanceBotCommandHandler struct {
+	appConfig      configs.App
 	userRepository repositories.UserRepository
 	logger         *zap.SugaredLogger
 }
 
-func NewAccessGovernanceBotCommandHandler(userRepository repositories.UserRepository, logger *zap.SugaredLogger) CommandHandler {
-	return &accessGovernanceBotCommandHandler{userRepository: userRepository, logger: logger}
+func NewAccessGovernanceBotCommandHandler(appConfig configs.App, userRepository repositories.UserRepository, logger *zap.SugaredLogger) CommandHandler {
+	return &accessGovernanceBotCommandHandler{
+		appConfig:      appConfig,
+		userRepository: userRepository,
+		logger:         logger,
+	}
 }
 
 func (h *accessGovernanceBotCommandHandler) Handle(commands []commands.Command, message *tgbotapi.Message) tgbotapi.Chattable {
@@ -29,7 +36,7 @@ func (h *accessGovernanceBotCommandHandler) Handle(commands []commands.Command, 
 	user, err := h.userRepository.GetOne(message.From.ID)
 	if user == nil || err != nil {
 		h.logger.Errorw("failed to get user", "error", err)
-		return tgbotapi.NewMessage(chatID, "Ты не зарегистрирован в системе")
+		return tgbotapi.NewMessage(chatID, fmt.Sprintf("Привет! К сожалению, ты не участник сообщества %s.", h.appConfig.CommunityName))
 	}
 
 	if message.IsCommand() {

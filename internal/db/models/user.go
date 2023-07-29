@@ -1,5 +1,10 @@
 package models
 
+import (
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
+)
+
 type UserRole string
 
 const (
@@ -7,6 +12,14 @@ const (
 	UserRoleMember UserRole = "member"
 	UserRoleSeeder UserRole = "seeder"
 )
+
+func (r UserRole) String() string {
+	return string(r)
+}
+
+func (r UserRole) CapitalizedString() string {
+	return cases.Title(language.English).String(r.String())
+}
 
 type User struct {
 	ID            int           `json:"id" pg:",pk,default:gen_random_uuid()"`

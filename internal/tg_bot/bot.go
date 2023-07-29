@@ -1,4 +1,4 @@
-package tg_bot
+package tgbot
 
 import (
 	"access_governance_system/configs"

@@ -8,6 +8,7 @@ import (
 	"access_governance_system/internal/tg_bot/commands"
 	"access_governance_system/internal/tg_bot/handlers"
 	"context"
+	"errors"
 	"go.uber.org/zap"
 	"net/http"
 	"os"
@@ -42,14 +43,14 @@ func main() {
 	userRepository := repositories.NewUserRepository(database)
 	proposalRepository := repositories.NewProposalRepository(database)
 
-	tg_bot.NewBot(
+	tgbot.NewBot(
 		[]commands.Command{
-			commands.NewStartCommand(userRepository, logger),
+			commands.NewStartCommand(config.App, userRepository, logger),
 			commands.NewApprovedProposalsCommand(proposalRepository, logger),
-			commands.NewCreateProposalCommand(userRepository, proposalRepository, logger),
+			commands.NewCreateProposalCommand(config.App, userRepository, proposalRepository, logger),
 			commands.NewPendingProposalsCommand(proposalRepository, logger),
 		},
-		handlers.NewAccessGovernanceBotCommandHandler(userRepository, logger),
+		handlers.NewAccessGovernanceBotCommandHandler(config.App, userRepository, logger),
 	).Start(config, logger)
 }
 
@@ -59,7 +60,7 @@ func settingUpHealthCheckServer(logger *zap.SugaredLogger) {
 
 	server := &http.Server{Addr: ":8080", Handler: mux}
 
-	if err := server.ListenAndServe(); err != http.ErrServerClosed {
+	if err := server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
 		logger.Errorw("failed to start http server", "error", err)
 	}
 

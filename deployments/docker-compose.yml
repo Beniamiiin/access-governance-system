@@ -1,9 +1,28 @@
+x-loki-logging: &loki-logging
+  logging:
+    driver: loki
+    options:
+      loki-url: ${LOKI_URL}
+
 services:
+  database:
+    image: postgres:15.3
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - 5432:5432
+    <<: *loki-logging
+
   access-governance-bot:
     build:
       context: ..
       dockerfile: ./cmd/access_governance_bot/Dockerfile
+    restart: on-failure:5
     env_file:
-      - ~/.access-governance-system.env
+      - ../.env
     ports:
       - 8080:8080
+    depends_on:
+      - database
+    <<: *loki-logging

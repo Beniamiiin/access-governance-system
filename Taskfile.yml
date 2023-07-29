@@ -6,9 +6,19 @@ tasks:
   up:
     desc: Start system
     cmds:
-      - docker-compose -f ./deployments/docker-compose.yml up --force-recreate --build -d
+      - |
+        if ! docker plugin inspect loki >/dev/null 2>&1; then
+          docker plugin install grafana/loki-docker-driver:latest --alias loki --grant-all-permissions
+        fi
+      - docker-compose 
+          --env-file .env
+          --file ./deployments/docker-compose.yml
+          --project-name access-governance-system
+          up
+          --detach
+          --build
 
   down:
     desc: Stop system
     cmds:
-      - docker-compose -f ./deployments/docker-compose.yml down
+      - docker-compose --env-file .env --file ./deployments/docker-compose.yml down

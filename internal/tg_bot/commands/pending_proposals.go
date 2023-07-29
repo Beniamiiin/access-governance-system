@@ -1,8 +1,10 @@
 package commands
 
 import (
+	"access_governance_system/internal"
 	"access_governance_system/internal/db/models"
 	"access_governance_system/internal/db/repositories"
+	tgbot "access_governance_system/internal/tg_bot/extension"
 	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"go.uber.org/zap"
@@ -30,7 +32,7 @@ func (c *pendingProposalsCommand) Start(text string, user *models.User, chatID i
 	proposals, err := c.proposalRepository.GetMany(models.ProposalStatusCreated)
 	if err != nil {
 		c.logger.Errorw("failed to get proposals", "error", err)
-		return tgbotapi.NewMessage(chatID, "Произошла ошибка, повторите попытку позже")
+		return tgbot.ErrorMessage(chatID)
 	}
 
 	var message string
@@ -39,7 +41,19 @@ func (c *pendingProposalsCommand) Start(text string, user *models.User, chatID i
 		message = "Нет предложений на рассмотрении"
 	} else {
 		for _, proposal := range proposals {
-			message += fmt.Sprintf("Proposal ID: %d\n", proposal.ID)
+			if user.Role == models.UserRoleSeeder {
+				message += fmt.Sprintf("Тип: %s\n", proposal.NomineeRole.String())
+			}
+
+			message += fmt.Sprintf("Никнейм: %s\n", proposal.NomineeTelegramNickname)
+
+			if user.Role == models.UserRoleSeeder {
+				message += fmt.Sprintf("Комментарий: %s\n", proposal.Comment)
+			}
+
+			message += fmt.Sprintf("Дата начала: %s\n", internal.Format(proposal.CreatedAt))
+			message += fmt.Sprintf("Дата окончания: %s\n", internal.Format(proposal.FinishedAt))
+			message += fmt.Sprintln()
 		}
 	}
 
