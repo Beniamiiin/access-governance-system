@@ -1,9 +1,3 @@
-x-loki-logging: &loki-logging
-  logging:
-    driver: loki
-    options:
-      loki-url: ${LOKI_URL}
-
 services:
   database:
     image: postgres:15.3
@@ -12,7 +6,6 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
       - 5432:5432
-    <<: *loki-logging
 
   access-governance-bot:
     build:
@@ -25,4 +18,3 @@ services:
       - 8080:8080
     depends_on:
       - database
-    <<: *loki-logging

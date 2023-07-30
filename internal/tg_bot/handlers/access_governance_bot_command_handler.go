@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"access_governance_system/configs"
+	"access_governance_system/internal/db/models"
 	"access_governance_system/internal/db/repositories"
 	"access_governance_system/internal/tg_bot/commands"
 	"fmt"
@@ -36,7 +37,30 @@ func (h *accessGovernanceBotCommandHandler) Handle(commands []commands.Command, 
 	user, err := h.userRepository.GetOne(message.From.ID)
 	if user == nil || err != nil {
 		h.logger.Errorw("failed to get user", "error", err)
-		return tgbotapi.NewMessage(chatID, fmt.Sprintf("Привет! К сожалению, ты не участник сообщества %s.", h.appConfig.CommunityName))
+
+		isItSeeder := false
+
+		for _, seeder := range h.appConfig.InitialSeeders {
+			if message.From.UserName == seeder {
+				user = &models.User{
+					TelegramID: message.From.ID,
+					Role:       models.UserRoleSeeder,
+				}
+
+				user, err = h.userRepository.Create(user)
+				if err != nil {
+					h.logger.Errorw("failed to create user", "error", err)
+					return nil
+				}
+
+				isItSeeder = true
+				break
+			}
+		}
+
+		if !isItSeeder {
+			return tgbotapi.NewMessage(chatID, fmt.Sprintf("Привет! К сожалению, ты не участник сообщества %s.", h.appConfig.CommunityName))
+		}
 	}
 
 	if message.IsCommand() {

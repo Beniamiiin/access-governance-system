@@ -6,9 +6,10 @@ import (
 )
 
 type AccessGovernanceBotConfig struct {
-	App App
-	Bot Bot
-	DB  DB
+	App    App
+	DB     DB
+	Logger Logger
+	Bot    AccessGovernanceBot
 }
 
 func LoadAccessGovernanceBotConfig() (AccessGovernanceBotConfig, error) {
@@ -17,6 +18,8 @@ func LoadAccessGovernanceBotConfig() (AccessGovernanceBotConfig, error) {
 	if err := env.Parse(&config); err != nil {
 		return AccessGovernanceBotConfig{}, fmt.Errorf("failed to parse config: %w", err)
 	}
+
+	config.Logger.AppName = "access-governance-bot"
 
 	return config, nil
 }

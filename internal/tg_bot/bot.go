@@ -51,7 +51,7 @@ func (b *bot) createBot(config configs.AccessGovernanceBotConfig) (*tgbotapi.Bot
 	bot.Debug = true
 
 	u := tgbotapi.NewUpdate(0)
-	u.Timeout = config.Bot.UpdateTimeout
+	u.Timeout = 60
 
 	return bot, bot.GetUpdatesChan(u), nil
 }

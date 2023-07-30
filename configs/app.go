@@ -1,10 +1,11 @@
 package configs
 
 type App struct {
-	Environment              string `env:"ENVIRONMENT,notEmpty"`
-	CommunityName            string `env:"COMMUNITY_NAME,notEmpty"`
-	VotingDurationDays       int    `env:"VOTING_DURATION_DAYS,notEmpty"`
-	RenominationPeriodMonths int    `env:"RENOMINATION_PERIOD_MONTHS,notEmpty"`
+	Environment              string   `env:"ENVIRONMENT,notEmpty"`
+	CommunityName            string   `env:"COMMUNITY_NAME" envDefault:"S16"`
+	VotingDurationDays       int      `env:"VOTING_DURATION_DAYS" envDefault:"7"`
+	RenominationPeriodMonths int      `env:"RENOMINATION_PERIOD_MONTHS" envDefault:"3"`
+	InitialSeeders           []string `env:"INITIAL_SEEDERS" envSeparator:","`
 }
 
 func (c App) IsDevEnvironment() bool {

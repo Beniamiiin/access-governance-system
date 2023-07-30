@@ -4,6 +4,7 @@ import (
 	"access_governance_system/configs"
 	"access_governance_system/internal/db"
 	"access_governance_system/internal/db/repositories"
+	"access_governance_system/internal/di"
 	"access_governance_system/internal/tg_bot"
 	"access_governance_system/internal/tg_bot/commands"
 	"access_governance_system/internal/tg_bot/handlers"
@@ -18,10 +19,9 @@ import (
 )
 
 func main() {
-	logger := zap.Must(zap.NewProduction()).Sugar()
-
-	logger.Info("loading config")
 	config, err := configs.LoadAccessGovernanceBotConfig()
+	logger := di.NewLogger(config.Logger)
+
 	if err != nil {
 		logger.Fatalw("failed to load config", "error", err)
 	}
