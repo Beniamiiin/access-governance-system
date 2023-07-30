@@ -5,7 +5,9 @@ import (
 	"access_governance_system/internal/db/models"
 	"access_governance_system/internal/db/repositories"
 	"access_governance_system/internal/tg_bot/commands"
+	"errors"
 	"fmt"
+	"github.com/go-pg/pg/v10"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"go.uber.org/zap"
 )
@@ -40,21 +42,23 @@ func (h *accessGovernanceBotCommandHandler) Handle(commands []commands.Command, 
 
 		isItSeeder := false
 
-		for _, seeder := range h.appConfig.InitialSeeders {
-			if message.From.UserName == seeder {
-				user = &models.User{
-					TelegramID: message.From.ID,
-					Role:       models.UserRoleSeeder,
-				}
+		if errors.Is(err, pg.ErrNoRows) {
+			for _, seeder := range h.appConfig.InitialSeeders {
+				if message.From.UserName == seeder {
+					user = &models.User{
+						TelegramID: message.From.ID,
+						Role:       models.UserRoleSeeder,
+					}
 
-				user, err = h.userRepository.Create(user)
-				if err != nil {
-					h.logger.Errorw("failed to create user", "error", err)
-					return nil
-				}
+					user, err = h.userRepository.Create(user)
+					if err != nil {
+						h.logger.Errorw("failed to create user", "error", err)
+						return nil
+					}
 
-				isItSeeder = true
-				break
+					isItSeeder = true
+					break
+				}
 			}
 		}
 

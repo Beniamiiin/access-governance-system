@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS proposals (
     nominator_id INTEGER NOT NULL,
     nominee_telegram_nickname VARCHAR NOT NULL,
     nominee_role NomineeRole NOT NULL,
-    comment VARCHAR NOT NULL,
+    comment VARCHAR,
     created_at DATE NOT NULL DEFAULT CURRENT_DATE,
     finished_at DATE,
     status ProposalStatus NOT NULL DEFAULT 'created'
