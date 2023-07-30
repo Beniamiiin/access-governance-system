@@ -20,7 +20,7 @@ import (
 
 func main() {
 	config, err := configs.LoadAccessGovernanceBotConfig()
-	logger := di.NewLogger(config.Logger)
+	logger := di.NewLogger(config.Logger.AppName, config.App.Environment, config.Logger.URL)
 
 	if err != nil {
 		logger.Fatalw("failed to load config", "error", err)
