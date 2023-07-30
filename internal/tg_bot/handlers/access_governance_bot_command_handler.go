@@ -73,7 +73,7 @@ func (h *accessGovernanceBotCommandHandler) Handle(commands []commands.Command, 
 		for _, handler := range commands {
 			if handler.CanHandle(command) {
 				user.TelegramState.LastCommand = command
-				_, err := h.userRepository.Update(user)
+				user, err = h.userRepository.Update(user)
 				if err != nil {
 					h.logger.Errorw("failed to update user", "error", err)
 				}
