@@ -26,4 +26,5 @@ jobs:
         with:
           context: .
           push: true
-          tags: ghcr.io/beniamiiin/access-governance-system:latest
+          file: ./cmd/access_governance_bot/Dockerfile
+          tags: ghcr.io/access-governance-system/access-governance-bot:latest
