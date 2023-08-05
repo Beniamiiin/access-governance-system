@@ -18,7 +18,7 @@ func (d dbLogger) BeforeQuery(c context.Context, q *pg.QueryEvent) (context.Cont
 		return c, nil
 	}
 
-	d.logger.Info(string(query))
+	d.logger.Debug(string(query))
 	return c, nil
 }
 

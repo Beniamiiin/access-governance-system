@@ -134,7 +134,7 @@ func (c *createProposalCommand) handleWaitingForNicknameState(proposalNomineeNic
 				lastProposal.ID,
 				lastProposal.CreatedAt,
 			)
-			return tgbotapi.NewMessage(chatID, "Предыдущее предложение на добавление это участника в сообщество ещё не рассмотрено.")
+			return tgbotapi.NewMessage(chatID, "Предыдущее предложение на добавление этого участника в сообщество ещё не рассмотрено.")
 		case models.ProposalStatusApproved:
 			c.logger.Warnf(
 				"user tried to create proposal for nominee with existing approved proposal: %s, %d, %s",
