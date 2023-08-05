@@ -29,4 +29,4 @@ jobs:
           context: .
           push: true
           file: ./cmd/access_governance_bot/Dockerfile
-          tags: ghcr.io/beniamiiin/access-governance-bot:latest
+          tags: ghcr.io/beniamiiin/access-governance-system:latest
