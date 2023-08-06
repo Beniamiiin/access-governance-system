@@ -28,7 +28,7 @@ jobs:
         with:
           context: .
           file: ./cmd/access_governance_bot/Dockerfile
-          build-args: |
+          build-arg: |
             ENVIRONMENT=${{ env.ENVIRONMENT }}
             COMMUNITY_NAME=${{ env.COMMUNITY_NAME }}
             INITIAL_SEEDERS=${{ env.INITIAL_SEEDERS }}
