@@ -7,9 +7,8 @@ on:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
-
+    environment: production
     steps:
       - uses: actions/checkout@v3
 
@@ -28,12 +27,12 @@ jobs:
         with:
           context: .
           file: ./cmd/access_governance_bot/Dockerfile
-          build-arg: |
-            ENVIRONMENT=${{ env.ENVIRONMENT }}
-            COMMUNITY_NAME=${{ env.COMMUNITY_NAME }}
-            INITIAL_SEEDERS=${{ env.INITIAL_SEEDERS }}
-            RENOMINATION_PERIOD_MONTHS=${{ env.RENOMINATION_PERIOD_MONTHS }}
-            VOTING_DURATION_DAYS=${{ env.VOTING_DURATION_DAYS }}
+          build-args: |
+            ENVIRONMENT=${{ vars.ENVIRONMENT }}
+            COMMUNITY_NAME=${{ vars.COMMUNITY_NAME }}
+            INITIAL_SEEDERS=${{ vars.INITIAL_SEEDERS }}
+            RENOMINATION_PERIOD_MONTHS=${{ vars.RENOMINATION_PERIOD_MONTHS }}
+            VOTING_DURATION_DAYS=${{ vars.VOTING_DURATION_DAYS }}
             LOKI_URL=${{ secrets.LOKI_URL }}
             DB_URL=${{ secrets.DB_URL }}
             TELEGRAM_ACCESS_GOVERNANCE_BOT_TOKEN=${{ secrets.TELEGRAM_ACCESS_GOVERNANCE_BOT_TOKEN }}
