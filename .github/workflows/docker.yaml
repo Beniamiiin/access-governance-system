@@ -27,6 +27,15 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: .
-          push: true
           file: ./cmd/access_governance_bot/Dockerfile
+          # noinspection YAMLSchemaValidation
+          build-args:
+            - ENVIRONMENT=${{ env.ENVIRONMENT }}
+            - COMMUNITY_NAME=${{ env.COMMUNITY_NAME }}
+            - INITIAL_SEEDERS=${{ env.INITIAL_SEEDERS }}
+            - RENOMINATION_PERIOD_MONTHS=${{ env.RENOMINATION_PERIOD_MONTHS }}
+            - VOTING_DURATION_DAYS=${{ env.VOTING_DURATION_DAYS }}
+            - LOKI_URL=${{ secrets.LOKI_URL }}
+            - TELEGRAM_ACCESS_GOVERNANCE_BOT_TOKEN=${{ secrets.TELEGRAM_ACCESS_GOVERNANCE_BOT_TOKEN }}
+          push: true
           tags: ghcr.io/beniamiiin/access-governance-system:latest
