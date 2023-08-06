@@ -35,6 +35,7 @@ jobs:
             RENOMINATION_PERIOD_MONTHS=${{ env.RENOMINATION_PERIOD_MONTHS }}
             VOTING_DURATION_DAYS=${{ env.VOTING_DURATION_DAYS }}
             LOKI_URL=${{ secrets.LOKI_URL }}
+            DB_URL=${{ secrets.DB_URL }}
             TELEGRAM_ACCESS_GOVERNANCE_BOT_TOKEN=${{ secrets.TELEGRAM_ACCESS_GOVERNANCE_BOT_TOKEN }}
           push: true
           tags: ghcr.io/beniamiiin/access-governance-system:latest
