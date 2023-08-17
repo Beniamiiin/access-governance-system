@@ -5,9 +5,12 @@ import (
 	"access_governance_system/internal/db/models"
 	"access_governance_system/internal/db/repositories"
 	tgbot "access_governance_system/internal/tg_bot/extension"
+	"bytes"
 	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"go.uber.org/zap"
+	"io"
+	"net/http"
 	"strings"
 	"time"
 )
@@ -226,6 +229,8 @@ func (c *createProposalCommand) handleWaitingForConfirmState(confirmationState s
 	message := tgbotapi.NewMessage(chatID, "Отлично, твое предложение отправлено на голосование.")
 	message.ReplyMarkup = tgbotapi.NewRemoveKeyboard(true)
 
+	sendCreatePoll(fmt.Sprintf("Should we add @%s to the community?", user.TempProposal.NomineeTelegramNickname))
+
 	user.TempProposal = models.Proposal{}
 	user.TelegramState = models.TelegramState{}
 	_ = c.updateUser(user)
@@ -239,4 +244,33 @@ func (c *createProposalCommand) updateUser(user *models.User) error {
 		c.logger.Errorw("failed to update user", "error", err)
 	}
 	return err
+}
+
+func sendCreatePoll(name string) {
+	json := []byte(fmt.Sprintf(`{"name": %s,"due_date": "2023-08-19T14:36:52"}`, name))
+	body := bytes.NewBuffer(json)
+
+	// Create client
+	client := &http.Client{}
+
+	// Create request
+	req, err := http.NewRequest("POST", "http://localhost:8000/poll", body)
+
+	// Headers
+	req.Header.Add("Content-Type", "application/json; charset=utf-8")
+
+	// Fetch Request
+	resp, err := client.Do(req)
+
+	if err != nil {
+		fmt.Println("Failure : ", err)
+	}
+
+	// Read Response Body
+	respBody, _ := io.ReadAll(resp.Body)
+
+	// Display Results
+	fmt.Println("response Status : ", resp.Status)
+	fmt.Println("response Headers : ", resp.Header)
+	fmt.Println("response Body : ", string(respBody))
 }
