@@ -229,7 +229,10 @@ func (c *createProposalCommand) handleWaitingForConfirmState(confirmationState s
 	message := tgbotapi.NewMessage(chatID, "Отлично, твое предложение отправлено на голосование.")
 	message.ReplyMarkup = tgbotapi.NewRemoveKeyboard(true)
 
-	sendCreatePoll(fmt.Sprintf("Should we add @%s to the community?", user.TempProposal.NomineeTelegramNickname))
+	fmt.Println(proposal)
+	name := fmt.Sprintf("Should we add %s to the community?", proposal.NomineeTelegramNickname)
+	fmt.Println(name)
+	c.sendCreatePoll(name)
 
 	user.TempProposal = models.Proposal{}
 	user.TelegramState = models.TelegramState{}
@@ -246,8 +249,9 @@ func (c *createProposalCommand) updateUser(user *models.User) error {
 	return err
 }
 
-func sendCreatePoll(name string) {
-	json := []byte(fmt.Sprintf(`{"name": %s,"due_date": "2023-08-19T14:36:52"}`, name))
+func (c *createProposalCommand) sendCreatePoll(name string) {
+	dueDate := time.Now().AddDate(0, 0, c.appConfig.VotingDurationDays).Format(time.RFC3339)
+	json := []byte(fmt.Sprintf(`{"name": "%s","due_date": "%s"}`, name, dueDate))
 	body := bytes.NewBuffer(json)
 
 	// Create client
@@ -261,7 +265,6 @@ func sendCreatePoll(name string) {
 
 	// Fetch Request
 	resp, err := client.Do(req)
-
 	if err != nil {
 		fmt.Println("Failure : ", err)
 	}
