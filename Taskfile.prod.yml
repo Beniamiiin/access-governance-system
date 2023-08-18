@@ -54,7 +54,7 @@ tasks:
       SERVICE_NAME: access-governance-bot
     cmds:
       - docker rm -f {{.SERVICE_NAME}}
-      - docker rmi {{.SERVICE_NAME}}
+      - docker rmi -f {{.SERVICE_NAME}}
 
   # Vote Bot
 
@@ -75,7 +75,7 @@ tasks:
       SERVICE_NAME: vot-bot
     cmds:
       - docker rm -f {{.SERVICE_NAME}}
-      - docker rmi {{.SERVICE_NAME}}
+      - docker rmi -f {{.SERVICE_NAME}}
 
   # Vote Bot Api
 
@@ -96,4 +96,4 @@ tasks:
       SERVICE_NAME: vot-bot-api
     cmds:
       - docker rm -f {{.SERVICE_NAME}}
-      - docker rmi {{.SERVICE_NAME}}
+      - docker rmi -f {{.SERVICE_NAME}}
