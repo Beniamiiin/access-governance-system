@@ -1,0 +1,99 @@
+# https://taskfile.dev
+
+version: '3'
+
+vars:
+  NETWORK_NAME: access-governance-system-network
+
+tasks:
+  up:
+    desc: Start system
+    deps: [install-docker-plugins, create-network, access-governance-bot-up, vote-bot-up, vote-bot-api-up]
+
+  down:
+    desc: Stop system
+    deps: [remove-network, access-governance-bot-down, vote-bot-down, vote-bot-api-down]
+
+  # General
+
+  install-docker-plugins:
+    desc: Install all needed docker plugins
+    cmds:
+      - |
+        if ! docker plugin inspect loki >/dev/null 2>&1; then
+          docker plugin install grafana/loki-docker-driver:latest --alias loki --grant-all-permissions
+        fi
+
+  create-network:
+    desc: Create access governance system network
+    cmds:
+      - docker network create {{.NETWORK_NAME}}
+
+  remove-network:
+    desc: Remove access governance system network
+    cmds:
+      - docker network rm {{.NETWORK_NAME}}
+
+  # Access Governance Bot
+
+  access-governance-bot-up:
+    desc: Start access governance bot
+    deps: [install-docker-plugins]
+    vars:
+      URL: ghcr.io/beniamiiin/access-governance-system:latest
+      SERVICE_NAME: access-governance-bot
+    cmds:
+      - docker pull {{.URL}}
+      - docker image tag {{.URL}} {{.SERVICE_NAME}}
+      - docker rmi {{.URL}}
+      - docker run --detach --interactive --tty --net {{.NETWORK_NAME}} --name {{.SERVICE_NAME}}
+
+  access-governance-bot-down:
+    desc: Stop access governance bot
+    vars:
+      SERVICE_NAME: access-governance-bot
+    cmds:
+      - docker rm -f {{.SERVICE_NAME}}
+      - docker rmi {{.SERVICE_NAME}}
+
+  # Vote Bot
+
+  vote-bot-up:
+    desc: Start vote bot
+    vars:
+      URL: ghcr.io/beniamiiin/ultimate-poll-bot:latest
+      SERVICE_NAME: vot-bot
+    cmds:
+      - docker pull {{.URL}}
+      - docker image tag {{.URL}} {{.SERVICE_NAME}}
+      - docker rmi {{.URL}}
+      - docker run --detach --interactive --tty --net {{.NETWORK_NAME}} --name {{.SERVICE_NAME}}
+
+  vote-bot-down:
+    desc: Stop vot bot
+    vars:
+      SERVICE_NAME: vot-bot
+    cmds:
+      - docker rm -f {{.SERVICE_NAME}}
+      - docker rmi {{.SERVICE_NAME}}
+
+  # Vote Bot Api
+
+  vote-bot-api-up:
+    desc: Start vote bot
+    vars:
+      URL: ghcr.io/beniamiiin/ultimate-poll-bot:api
+      SERVICE_NAME: vot-bot-api
+    cmds:
+      - docker pull {{.URL}}
+      - docker image tag {{.URL}} {{.SERVICE_NAME}}
+      - docker rmi {{.URL}}
+      - docker run --detach --interactive --tty --net {{.NETWORK_NAME}} --name {{.SERVICE_NAME}}
+
+  vote-bot-api-down:
+    desc: Stop vot bot
+    vars:
+      SERVICE_NAME: vot-bot-api
+    cmds:
+      - docker rm -f {{.SERVICE_NAME}}
+      - docker rmi {{.SERVICE_NAME}}

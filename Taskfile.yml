@@ -5,20 +5,34 @@ version: '3'
 tasks:
   up:
     desc: Start system
+    deps: [access-governance-bot-up]
+
+  down:
+    desc: Stop system
+    deps: [access-governance-bot-down]
+
+  # Access Governance Bot
+
+  access-governance-bot-up:
+    desc: Start access governance bot
     cmds:
       - |
         if ! docker plugin inspect loki >/dev/null 2>&1; then
           docker plugin install grafana/loki-docker-driver:latest --alias loki --grant-all-permissions
         fi
-      - docker-compose 
-          --env-file .env
-          --file ./deployments/docker-compose.yml
-          --project-name access-governance-system
-          up
-          --detach
-          --build
+      - docker-compose
+        --env-file .env
+        --file ./deployments/docker-compose.yml
+        --project-name access-governance-bot
+        up
+        --detach
+        --build
 
-  down:
-    desc: Stop system
+  access-governance-bot-down:
+    desc: Stop access governance bot
     cmds:
-      - docker-compose --env-file .env --file ./deployments/docker-compose.yml down
+      - docker-compose
+        --env-file .env
+        --file ./deployments/docker-compose.yml
+        --project-name access-governance-bot
+        down
