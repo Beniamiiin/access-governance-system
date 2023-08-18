@@ -247,7 +247,7 @@ func (c *createProposalCommand) updateUser(user *models.User) error {
 }
 
 func (c *createProposalCommand) sendCreatePoll(name string) {
-	dueDate := time.Now().AddDate(0, 0, c.appConfig.VotingDurationDays).Format(time.RFC3339)
+	dueDate := time.Now().UTC().AddDate(0, 0, c.appConfig.VotingDurationDays).Format("2006-01-02T15:04:05")
 	json := []byte(fmt.Sprintf(`{"name": "%s","due_date": "%s"}`, name, dueDate))
 	body := bytes.NewBuffer(json)
 
