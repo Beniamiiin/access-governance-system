@@ -8,11 +8,21 @@ vars:
 tasks:
   up:
     desc: Start system
-    deps: [install-docker-plugins, create-network, access-governance-bot-up, vote-bot-up, vote-bot-api-up]
+    deps:
+      - install-docker-plugins
+      - create-network
+      - access-governance-bot-up
+      - vote-bot-up
+      - vote-bot-api-up
 
   down:
     desc: Stop system
-    deps: [access-governance-bot-down, vote-bot-down, vote-bot-api-down, remove-network]
+    deps:
+      - access-governance-bot-down
+      - vote-bot-down
+      - vote-bot-api-down
+    cmds:
+      - docker network rm {{.NETWORK_NAME}}
 
   # General
 
@@ -29,16 +39,12 @@ tasks:
     cmds:
       - docker network create {{.NETWORK_NAME}}
 
-  remove-network:
-    desc: Remove access governance system network
-    cmds:
-      - docker network rm {{.NETWORK_NAME}}
-
   # Access Governance Bot
 
   access-governance-bot-up:
     desc: Start access governance bot
-    deps: [install-docker-plugins]
+    deps:
+      - install-docker-plugins
     vars:
       URL: ghcr.io/beniamiiin/access-governance-system:latest
       SERVICE_NAME: access-governance-bot
