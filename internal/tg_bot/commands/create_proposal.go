@@ -258,7 +258,7 @@ func (c *createProposalCommand) sendCreatePoll(name string) {
 	client := &http.Client{}
 
 	// Create request
-	req, err := http.NewRequest("POST", "http://localhost:8000/poll", body)
+	req, err := http.NewRequest("POST", "http://vot-bot-api:8000/poll", body)
 
 	// Headers
 	req.Header.Add("Content-Type", "application/json; charset=utf-8")
