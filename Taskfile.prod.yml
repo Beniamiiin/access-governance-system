@@ -46,7 +46,7 @@ tasks:
       - docker pull {{.URL}}
       - docker image tag {{.URL}} {{.SERVICE_NAME}}
       - docker rmi {{.URL}}
-      - docker run --detach --interactive --tty --net {{.NETWORK_NAME}} --name {{.SERVICE_NAME}}
+      - docker run --detach --interactive --tty --net {{.NETWORK_NAME}} --name {{.SERVICE_NAME}} {{.SERVICE_NAME}}
 
   access-governance-bot-down:
     desc: Stop access governance bot
@@ -67,7 +67,7 @@ tasks:
       - docker pull {{.URL}}
       - docker image tag {{.URL}} {{.SERVICE_NAME}}
       - docker rmi {{.URL}}
-      - docker run --detach --interactive --tty --net {{.NETWORK_NAME}} --name {{.SERVICE_NAME}}
+      - docker run --detach --interactive --tty --net {{.NETWORK_NAME}} --name {{.SERVICE_NAME}} {{.SERVICE_NAME}}
 
   vote-bot-down:
     desc: Stop vot bot
@@ -88,7 +88,7 @@ tasks:
       - docker pull {{.URL}}
       - docker image tag {{.URL}} {{.SERVICE_NAME}}
       - docker rmi {{.URL}}
-      - docker run --detach --interactive --tty --net {{.NETWORK_NAME}} --name {{.SERVICE_NAME}}
+      - docker run --detach --interactive --tty --net {{.NETWORK_NAME}} --name {{.SERVICE_NAME}} {{.SERVICE_NAME}}
 
   vote-bot-api-down:
     desc: Stop vot bot
