@@ -12,7 +12,7 @@ tasks:
 
   down:
     desc: Stop system
-    deps: [remove-network, access-governance-bot-down, vote-bot-down, vote-bot-api-down]
+    deps: [access-governance-bot-down, vote-bot-down, vote-bot-api-down, remove-network]
 
   # General
 
