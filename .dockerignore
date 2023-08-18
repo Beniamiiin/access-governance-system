@@ -1,0 +1,6 @@
+.env-example
+.github
+README.md
+Taskfile.prod.yml
+Taskfile.yml
+deployments

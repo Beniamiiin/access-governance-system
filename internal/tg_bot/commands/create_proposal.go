@@ -229,10 +229,7 @@ func (c *createProposalCommand) handleWaitingForConfirmState(confirmationState s
 	message := tgbotapi.NewMessage(chatID, "Отлично, твое предложение отправлено на голосование.")
 	message.ReplyMarkup = tgbotapi.NewRemoveKeyboard(true)
 
-	fmt.Println(proposal)
-	name := fmt.Sprintf("Should we add %s to the community?", proposal.NomineeTelegramNickname)
-	fmt.Println(name)
-	c.sendCreatePoll(name)
+	c.sendCreatePoll(fmt.Sprintf("Should we add %s to the community?", proposal.NomineeTelegramNickname))
 
 	user.TempProposal = models.Proposal{}
 	user.TelegramState = models.TelegramState{}
