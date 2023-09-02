@@ -5,17 +5,19 @@ import (
 	"access_governance_system/internal/db"
 	"access_governance_system/internal/db/repositories"
 	"access_governance_system/internal/di"
-	"access_governance_system/internal/tg_bot"
+	"access_governance_system/internal/services"
+	tgbot "access_governance_system/internal/tg_bot"
 	"access_governance_system/internal/tg_bot/commands"
 	"access_governance_system/internal/tg_bot/handlers"
 	"context"
 	"errors"
-	"go.uber.org/zap"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"go.uber.org/zap"
 )
 
 func main() {
@@ -42,12 +44,14 @@ func main() {
 	logger.Info("starting bot")
 	userRepository := repositories.NewUserRepository(database)
 	proposalRepository := repositories.NewProposalRepository(database)
+	voteService := services.NewVoteService(config.VoteAPI.URL)
 
 	tgbot.NewBot(
 		[]commands.Command{
 			commands.NewStartCommand(config.App, userRepository, logger),
+			commands.NewCancelProposalCommand(config.App, userRepository, logger),
 			commands.NewApprovedProposalsCommand(proposalRepository, logger),
-			commands.NewCreateProposalCommand(config.App, userRepository, proposalRepository, logger),
+			commands.NewCreateProposalCommand(config.App, userRepository, proposalRepository, voteService, logger),
 			commands.NewPendingProposalsCommand(proposalRepository, logger),
 		},
 		handlers.NewAccessGovernanceBotCommandHandler(config.App, userRepository, logger),

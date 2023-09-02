@@ -2,14 +2,16 @@ package configs
 
 import (
 	"fmt"
+
 	"github.com/caarlos0/env/v6"
 )
 
 type AccessGovernanceBotConfig struct {
-	App    App
-	DB     DB
-	Logger Logger
-	Bot    AccessGovernanceBot
+	App     App
+	DB      DB
+	Logger  Logger
+	Bot     AccessGovernanceBot
+	VoteAPI VoteAPI
 }
 
 func LoadAccessGovernanceBotConfig() (AccessGovernanceBotConfig, error) {

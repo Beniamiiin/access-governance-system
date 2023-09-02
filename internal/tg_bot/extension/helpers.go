@@ -2,6 +2,10 @@ package extension
 
 import tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 
-func ErrorMessage(chatID int64) tgbotapi.Chattable {
-	return tgbotapi.NewMessage(chatID, "Произошла ошибка, повтори попытку позже")
+func DefaultErrorMessage(chatID int64) tgbotapi.Chattable {
+	return ErrorMessage(chatID, "Произошла ошибка, повтори попытку позже")
+}
+
+func ErrorMessage(chatID int64, text string) tgbotapi.Chattable {
+	return tgbotapi.NewMessage(chatID, text)
 }

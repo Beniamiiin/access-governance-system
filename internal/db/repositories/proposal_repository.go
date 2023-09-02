@@ -13,9 +13,9 @@ type ProposalRepository interface {
 	Create(request *models.Proposal) (*models.Proposal, error)
 	Update(request *models.Proposal) (*models.Proposal, error)
 	Delete(request *models.Proposal) error
-	GetOne(proposalID int64) (*models.Proposal, error)
+	GetOneByID(id int64) (*models.Proposal, error)
 	GetManyByNomineeNickname(nomineeNickName string) ([]*models.Proposal, error)
-	GetMany(status ...models.ProposalStatus) ([]*models.Proposal, error)
+	GetManyByStatus(status ...models.ProposalStatus) ([]*models.Proposal, error)
 }
 
 func NewProposalRepository(db *pg.DB) ProposalRepository {
@@ -35,7 +35,6 @@ func (r *proposalRepository) Create(request *models.Proposal) (*models.Proposal,
 	proposal := &models.Proposal{}
 
 	err = r.db.Model(proposal).
-		Relation("Votes").
 		Where("id = ?", request.ID).
 		Select()
 
@@ -51,7 +50,6 @@ func (r *proposalRepository) Update(request *models.Proposal) (*models.Proposal,
 	proposal := &models.Proposal{}
 
 	err = r.db.Model(proposal).
-		Relation("Votes").
 		Where("id = ?", request.ID).
 		Select()
 
@@ -63,12 +61,11 @@ func (r *proposalRepository) Delete(request *models.Proposal) error {
 	return err
 }
 
-func (r *proposalRepository) GetOne(proposalID int64) (*models.Proposal, error) {
+func (r *proposalRepository) GetOneByID(id int64) (*models.Proposal, error) {
 	proposal := &models.Proposal{}
 
 	err := r.db.Model(proposal).
-		Relation("Votes").
-		Where("id = ?", proposalID).
+		Where("id = ?", id).
 		Select()
 
 	return proposal, err
@@ -85,11 +82,10 @@ func (r *proposalRepository) GetManyByNomineeNickname(nomineeNickName string) ([
 	return proposals, err
 }
 
-func (r *proposalRepository) GetMany(status ...models.ProposalStatus) ([]*models.Proposal, error) {
+func (r *proposalRepository) GetManyByStatus(status ...models.ProposalStatus) ([]*models.Proposal, error) {
 	proposals := make([]*models.Proposal, 0)
 
 	err := r.db.Model(&proposals).
-		Relation("Votes").
 		WhereGroup(func(q *pg.Query) (*pg.Query, error) {
 			for _, s := range status {
 				q = q.WhereOr("status = ?", s)

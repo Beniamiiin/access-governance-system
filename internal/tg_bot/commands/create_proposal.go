@@ -4,15 +4,14 @@ import (
 	"access_governance_system/configs"
 	"access_governance_system/internal/db/models"
 	"access_governance_system/internal/db/repositories"
+	"access_governance_system/internal/services"
 	tgbot "access_governance_system/internal/tg_bot/extension"
-	"bytes"
 	"fmt"
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"go.uber.org/zap"
-	"io"
-	"net/http"
 	"strings"
 	"time"
+
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"go.uber.org/zap"
 )
 
 const (
@@ -20,6 +19,7 @@ const (
 
 	waitingForTypeState     = "waiting_for_type"
 	waitingForNicknameState = "waiting_for_nickname"
+	waitingForNameState     = "waiting_for_name"
 	waitingForReasonState   = "waiting_for_reason"
 	waitingForConfirmState  = "waiting_for_confirm"
 )
@@ -36,14 +36,22 @@ type createProposalCommand struct {
 	appConfig          configs.App
 	userRepository     repositories.UserRepository
 	proposalRepository repositories.ProposalRepository
+	voteService        services.VoteService
 	logger             *zap.SugaredLogger
 }
 
-func NewCreateProposalCommand(appConfig configs.App, userRepository repositories.UserRepository, proposalRepository repositories.ProposalRepository, logger *zap.SugaredLogger) Command {
+func NewCreateProposalCommand(
+	appConfig configs.App,
+	userRepository repositories.UserRepository,
+	proposalRepository repositories.ProposalRepository,
+	voteService services.VoteService,
+	logger *zap.SugaredLogger,
+) Command {
 	return &createProposalCommand{
 		appConfig:          appConfig,
 		userRepository:     userRepository,
 		proposalRepository: proposalRepository,
+		voteService:        voteService,
 		logger:             logger,
 	}
 }
@@ -62,6 +70,8 @@ func (c *createProposalCommand) Start(text string, user *models.User, chatID int
 		return c.handleWaitingForTypeState(text, user, chatID)
 	case waitingForNicknameState:
 		return c.handleWaitingForNicknameState(text, user, chatID)
+	case waitingForNameState:
+		return c.handleWaitingForNameState(text, user, chatID)
 	case waitingForReasonState:
 		return c.handleWaitingForReasonState(text, user, chatID)
 	case waitingForConfirmState:
@@ -79,7 +89,12 @@ func (c *createProposalCommand) handleCreateProposalCommand(user *models.User, c
 	case models.UserRoleMember:
 		return c.handleWaitingForTypeState(user.Role.CapitalizedString(), user, chatID)
 	case models.UserRoleSeeder:
-		message := tgbotapi.NewMessage(chatID, "Кого ты хочешь добавить? Выбери нужный тип участника.")
+		parseMode := tgbotapi.ModeMarkdownV2
+		messageText := tgbotapi.EscapeText(parseMode, "Кого ты хочешь добавить - member или seeder?")
+		messageText = strings.Replace(messageText, "member", "*member*", -1)
+		messageText = strings.Replace(messageText, "seeder", "*seeder*", -1)
+		message := tgbotapi.NewMessage(chatID, messageText)
+		message.ParseMode = parseMode
 		message.ReplyMarkup = tgbotapi.NewOneTimeReplyKeyboard(
 			tgbotapi.NewKeyboardButtonRow(
 				tgbotapi.NewKeyboardButton(proposalTypeMember),
@@ -98,7 +113,7 @@ func (c *createProposalCommand) handleCreateProposalCommand(user *models.User, c
 }
 
 func (c *createProposalCommand) handleWaitingForTypeState(proposalNomineeType string, user *models.User, chatID int64) tgbotapi.Chattable {
-	message := tgbotapi.NewMessage(chatID, "Напиши, пожалуйста, никнейм пользователя в Telegram, которого ты хочешь предложить к добавлению в сообщество. Никнейм должен начинаться с @.")
+	message := tgbotapi.NewMessage(chatID, "Окей, теперь напиши никнейм пользователя в telegram, которого ты хочешь добавить в сообщество.")
 
 	switch proposalNomineeType {
 	case proposalTypeMember:
@@ -118,14 +133,13 @@ func (c *createProposalCommand) handleWaitingForTypeState(proposalNomineeType st
 
 func (c *createProposalCommand) handleWaitingForNicknameState(proposalNomineeNickname string, user *models.User, chatID int64) tgbotapi.Chattable {
 	if !strings.HasPrefix(proposalNomineeNickname, "@") {
-		c.logger.Warnf("user has invalid nominee nickname: %s", proposalNomineeNickname)
-		return tgbotapi.NewMessage(chatID, "Никнейм должен начинаться с @.")
+		proposalNomineeNickname = fmt.Sprintf("@%s", proposalNomineeNickname)
 	}
 
 	proposals, err := c.proposalRepository.GetManyByNomineeNickname(proposalNomineeNickname)
 	if err != nil {
 		c.logger.Errorf("failed to get proposals by nominee nickname: %s", err)
-		return tgbot.ErrorMessage(chatID)
+		return tgbot.DefaultErrorMessage(chatID)
 	} else if len(proposals) > 0 {
 		lastProposal := proposals[len(proposals)-1]
 
@@ -161,9 +175,26 @@ func (c *createProposalCommand) handleWaitingForNicknameState(proposalNomineeNic
 		}
 	}
 
-	message := tgbotapi.NewMessage(chatID, "Хорошо. Теперь напиши, почему ты считаешь, что этого участника стоит добавить в сообщество. Чем подробнее, тем лучше мы сможем понять твою точку зрения.")
+	text := fmt.Sprintf(
+		"Перед тем, как мы перейдем к следующему шагу, тебе нужно убедиться правильно ли ты ввел никнейм пользователя. "+
+			"Для это просто нажми на него %s (если на него нельзя нажать, то похоже ты ввел несуществующий никнейм).\n\n"+
+			"Если вдруг ты ошибся, то ты всегда можешь начать сначала вызвав команду /cancel_proposal.\n\n"+
+			"Напиши ФИО человека, которого ты хочешь добавить.", proposalNomineeNickname,
+	)
+	message := tgbotapi.NewMessage(chatID, text)
 
 	user.TempProposal.NomineeTelegramNickname = proposalNomineeNickname
+
+	user.TelegramState.LastCommandState = waitingForNameState
+	_ = c.updateUser(user)
+
+	return message
+}
+
+func (c *createProposalCommand) handleWaitingForNameState(proposalNomineeName string, user *models.User, chatID int64) tgbotapi.Chattable {
+	message := tgbotapi.NewMessage(chatID, "Теперь напиши, почему ты считаешь, что этого участника стоит добавить. Чем подробнее, тем лучше мы сможем понять твою точку зрения.")
+
+	user.TempProposal.NomineeName = proposalNomineeName
 
 	user.TelegramState.LastCommandState = waitingForReasonState
 	_ = c.updateUser(user)
@@ -177,6 +208,7 @@ func (c *createProposalCommand) handleWaitingForReasonState(proposalDescription 
 	messageText := ""
 	messageText += fmt.Sprintf("Тип: %s\n", user.TempProposal.NomineeRole)
 	messageText += fmt.Sprintf("Никнейм: %s\n", user.TempProposal.NomineeTelegramNickname)
+	messageText += fmt.Sprintf("ФИО: %s\n", user.TempProposal.NomineeName)
 	messageText += fmt.Sprintf("Причина: %s\n", user.TempProposal.Comment)
 	messageText += fmt.Sprintln()
 	messageText += "Все правильно, отправляем предложение на голосование?"
@@ -196,41 +228,44 @@ func (c *createProposalCommand) handleWaitingForReasonState(proposalDescription 
 
 func (c *createProposalCommand) handleWaitingForConfirmState(confirmationState string, user *models.User, chatID int64) tgbotapi.Chattable {
 	if confirmationState == confirmNo {
+		user.TempProposal = models.Proposal{}
+		user.TelegramState = models.TelegramState{}
+		_ = c.updateUser(user)
 		return c.Start(createProposalCommandName, user, chatID)
 	}
+
+	createdAt := time.Now()
+	finishedAt := createdAt.AddDate(0, 0, c.appConfig.VotingDurationDays)
+
+	title := fmt.Sprintf("%s (%s)", user.TempProposal.NomineeName, user.TempProposal.NomineeTelegramNickname)
+	description := user.TempProposal.Comment
+	pollID, err := c.voteService.CreatePoll(title, description, finishedAt)
+	if err != nil {
+		return tgbot.ErrorMessage(chatID, err.Error())
+	}
+
+	user.TempProposal.CreatedAt = createdAt
+	user.TempProposal.FinishedAt = finishedAt
+	user.TempProposal.PollID = pollID
 
 	proposal, err := c.proposalRepository.Create(&user.TempProposal)
 	if err != nil {
 		c.logger.Errorw("failed to create proposal", "error", err)
-		return tgbot.ErrorMessage(chatID)
-	}
-
-	proposal.FinishedAt = proposal.CreatedAt.AddDate(0, 0, c.appConfig.VotingDurationDays)
-	if _, err = c.proposalRepository.Update(proposal); err != nil {
-		c.logger.Errorw("failed to update proposal", "error", err)
-
-		if err = c.proposalRepository.Delete(proposal); err != nil {
-			c.logger.Errorw("failed to delete proposal", "error", err)
-		}
-
-		return tgbot.ErrorMessage(chatID)
+		return tgbot.DefaultErrorMessage(chatID)
 	}
 
 	c.logger.Info("proposal created")
 
-	user.Proposals = append(user.Proposals, user.TempProposal)
+	user.Proposals = append(user.Proposals, *proposal)
 
 	if err = c.updateUser(user); err != nil {
 		c.logger.Errorw("failed to update user", "error", err)
-		return tgbot.ErrorMessage(chatID)
+		return tgbot.DefaultErrorMessage(chatID)
 	}
 	c.logger.Info("user updated")
 
-	message := tgbotapi.NewMessage(chatID, "Отлично, твое предложение отправлено на голосование.")
+	message := tgbotapi.NewMessage(chatID, "Предложение отправлено на голосование.")
 	message.ReplyMarkup = tgbotapi.NewRemoveKeyboard(true)
-
-	name := fmt.Sprintf("Should we add %s to the community?", proposal.NomineeTelegramNickname)
-	c.sendCreatePoll(name, proposal.Comment)
 
 	user.TempProposal = models.Proposal{}
 	user.TelegramState = models.TelegramState{}
@@ -245,33 +280,4 @@ func (c *createProposalCommand) updateUser(user *models.User) error {
 		c.logger.Errorw("failed to update user", "error", err)
 	}
 	return err
-}
-
-func (c *createProposalCommand) sendCreatePoll(name, description string) {
-	dueDate := time.Now().UTC().AddDate(0, 0, c.appConfig.VotingDurationDays).Format("2006-01-02T15:04:05")
-	json := []byte(fmt.Sprintf(`{"name": "%s", "description": "%s", "due_date": "%s"}`, name, description, dueDate))
-	body := bytes.NewBuffer(json)
-
-	// Create client
-	client := &http.Client{}
-
-	// Create request
-	req, err := http.NewRequest("POST", "http://vot-bot-api:8000/poll", body)
-
-	// Headers
-	req.Header.Add("Content-Type", "application/json; charset=utf-8")
-
-	// Fetch Request
-	resp, err := client.Do(req)
-	if err != nil {
-		fmt.Println("Failure : ", err)
-	}
-
-	// Read Response Body
-	respBody, _ := io.ReadAll(resp.Body)
-
-	// Display Results
-	fmt.Println("response Status : ", resp.Status)
-	fmt.Println("response Headers : ", resp.Header)
-	fmt.Println("response Body : ", string(respBody))
 }

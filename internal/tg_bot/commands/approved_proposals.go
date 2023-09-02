@@ -29,10 +29,10 @@ func (c *approvedProposalsCommand) CanHandle(command string) bool {
 }
 
 func (c *approvedProposalsCommand) Start(text string, user *models.User, chatID int64) tgbotapi.Chattable {
-	proposals, err := c.proposalRepository.GetMany(models.ProposalStatusApproved, models.ProposalStatusRejected)
+	proposals, err := c.proposalRepository.GetManyByStatus(models.ProposalStatusApproved, models.ProposalStatusRejected)
 	if err != nil {
 		c.logger.Errorw("failed to get proposals", "error", err)
-		return tgbot.ErrorMessage(chatID)
+		return tgbot.DefaultErrorMessage(chatID)
 	}
 
 	message := ""
