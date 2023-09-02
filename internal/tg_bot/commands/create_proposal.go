@@ -161,7 +161,7 @@ func (c *createProposalCommand) handleWaitingForNicknameState(proposalNomineeNic
 			)
 			return tgbotapi.NewMessage(chatID, "Этот участник уже состоит в сообществе.")
 		case models.ProposalStatusRejected:
-			monthsAgo := time.Now().AddDate(0, -c.appConfig.RenominationPeriodMonths, 0)
+			monthsAgo := time.Now().AddDate(0, 0, -c.appConfig.RenominationPeriodDays)
 
 			if !lastProposal.CreatedAt.Before(monthsAgo) {
 				c.logger.Warnf(

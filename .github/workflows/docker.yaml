@@ -31,7 +31,7 @@ jobs:
             ENVIRONMENT=${{ vars.ENVIRONMENT }}
             COMMUNITY_NAME=${{ vars.COMMUNITY_NAME }}
             INITIAL_SEEDERS=${{ vars.INITIAL_SEEDERS }}
-            RENOMINATION_PERIOD_MONTHS=${{ vars.RENOMINATION_PERIOD_MONTHS }}
+            RENOMINATION_PERIOD_DAYS=${{ vars.RENOMINATION_PERIOD_DAYS }}
             VOTING_DURATION_DAYS=${{ vars.VOTING_DURATION_DAYS }}
             LOKI_URL=${{ secrets.LOKI_URL }}
             DB_URL=${{ secrets.DB_URL }}
