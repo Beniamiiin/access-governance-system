@@ -26,7 +26,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: .
-          file: ./cmd/access_governance_bot/Dockerfile
+          file: ./deployments/Dockerfile
           build-args: |
             ENVIRONMENT=${{ vars.ENVIRONMENT }}
             COMMUNITY_NAME=${{ vars.COMMUNITY_NAME }}
