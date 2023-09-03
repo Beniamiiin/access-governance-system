@@ -249,7 +249,8 @@ func (c *createProposalCommand) handleWaitingForConfirmState(confirmationState s
 
 	title := fmt.Sprintf("%s (%s)", user.TempProposal.NomineeName, user.TempProposal.NomineeTelegramNickname)
 	description := user.TempProposal.Comment
-	pollID, err := c.voteService.CreatePoll(title, description, finishedAt)
+	dueDate := time.Date(finishedAt.Year(), finishedAt.Month(), finishedAt.Day(), 12, 0, 0, 0, finishedAt.Location())
+	pollID, err := c.voteService.CreatePoll(title, description, dueDate)
 	if err != nil {
 		return tgbot.ErrorMessage(chatID, err.Error())
 	}

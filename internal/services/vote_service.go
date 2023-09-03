@@ -63,11 +63,10 @@ func (s *service) CreatePoll(title, description string, dueDate time.Time) (int,
 		return 0, err
 	}
 
-	fmt.Println("1. end", string(responseBody))
 	responseData := new(createPollResponseData)
 	if err := json.Unmarshal(responseBody, responseData); err != nil {
 		return 0, err
 	}
-	fmt.Println("2. end", responseData)
+
 	return responseData.ID, nil
 }
