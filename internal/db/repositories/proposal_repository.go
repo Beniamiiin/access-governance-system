@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"access_governance_system/internal/db/models"
+
 	"github.com/go-pg/pg/v10"
 )
 
@@ -37,6 +38,9 @@ func (r *proposalRepository) Create(request *models.Proposal) (*models.Proposal,
 	err = r.db.Model(proposal).
 		Where("id = ?", request.ID).
 		Select()
+	if err != nil && err.Error() == "pg: no rows in result set" {
+		return nil, nil
+	}
 
 	return proposal, err
 }
@@ -52,6 +56,9 @@ func (r *proposalRepository) Update(request *models.Proposal) (*models.Proposal,
 	err = r.db.Model(proposal).
 		Where("id = ?", request.ID).
 		Select()
+	if err != nil && err.Error() == "pg: no rows in result set" {
+		return nil, nil
+	}
 
 	return proposal, err
 }
@@ -67,6 +74,9 @@ func (r *proposalRepository) GetOneByID(id int64) (*models.Proposal, error) {
 	err := r.db.Model(proposal).
 		Where("id = ?", id).
 		Select()
+	if err != nil && err.Error() == "pg: no rows in result set" {
+		return nil, nil
+	}
 
 	return proposal, err
 }

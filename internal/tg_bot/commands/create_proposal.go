@@ -174,7 +174,7 @@ func (c *createProposalCommand) handleWaitingForNicknameState(proposalNomineeNic
 	}
 
 	foundUser, err := c.userRepository.GetOneByTelegramNickname(proposalNomineeNickname)
-	if err != nil && err.Error() != "pg: no rows in result set" {
+	if err != nil {
 		c.logger.Errorf("failed to get user by nominee nickname: %s", err)
 		return tgbot.DefaultErrorMessage(chatID)
 	} else if foundUser != nil {
@@ -217,7 +217,7 @@ func (c *createProposalCommand) handleWaitingForReasonState(proposalDescription 
 
 	messageText := ""
 	messageText += fmt.Sprintf("Тип: %s\n", user.TempProposal.NomineeRole)
-	messageText += fmt.Sprintf("Никнейм: %s\n", user.TempProposal.NomineeTelegramNickname)
+	messageText += fmt.Sprintf("Никнейм: @%s\n", user.TempProposal.NomineeTelegramNickname)
 	messageText += fmt.Sprintf("ФИО: %s\n", user.TempProposal.NomineeName)
 	messageText += fmt.Sprintf("Причина: %s\n", user.TempProposal.Comment)
 	messageText += fmt.Sprintln()

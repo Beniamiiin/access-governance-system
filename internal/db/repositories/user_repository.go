@@ -38,6 +38,9 @@ func (r *userRepository) Create(request *models.User) (*models.User, error) {
 		Relation("Proposals").
 		Where("id = ?", request.ID).
 		Select()
+	if err != nil && err.Error() == "pg: no rows in result set" {
+		return nil, nil
+	}
 
 	return user, err
 }
@@ -54,6 +57,9 @@ func (r *userRepository) Update(request *models.User) (*models.User, error) {
 		Relation("Proposals").
 		Where("id = ?", request.ID).
 		Select()
+	if err != nil && err.Error() == "pg: no rows in result set" {
+		return nil, nil
+	}
 
 	return user, err
 }
@@ -65,6 +71,9 @@ func (r *userRepository) GetOneByTelegramID(telegramID int64) (*models.User, err
 		Relation("Proposals").
 		Where("telegram_id = ?", telegramID).
 		Select()
+	if err != nil && err.Error() == "pg: no rows in result set" {
+		return nil, nil
+	}
 
 	return user, err
 }
@@ -76,6 +85,9 @@ func (r *userRepository) GetOneByTelegramNickname(telegramNickname string) (*mod
 		Relation("Proposals").
 		Where("telegram_nickname = ?", telegramNickname).
 		Select()
+	if err != nil && err.Error() == "pg: no rows in result set" {
+		return nil, nil
+	}
 
 	return user, err
 }
