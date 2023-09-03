@@ -87,7 +87,7 @@ func (c *createProposalCommand) handleCreateProposalCommand(user *models.User, c
 
 	switch user.Role {
 	case models.UserRoleMember:
-		return c.handleWaitingForTypeState(user.Role.CapitalizedString(), user, chatID)
+		return c.handleWaitingForTypeState(models.UserRoleMember.CapitalizedString(), user, chatID)
 	case models.UserRoleSeeder:
 		parseMode := tgbotapi.ModeMarkdownV2
 		messageText := tgbotapi.EscapeText(parseMode, "Кого ты хочешь добавить - member или seeder?")
