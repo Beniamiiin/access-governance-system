@@ -132,9 +132,7 @@ func (c *createProposalCommand) handleWaitingForTypeState(proposalNomineeType st
 }
 
 func (c *createProposalCommand) handleWaitingForNicknameState(proposalNomineeNickname string, user *models.User, chatID int64) tgbotapi.Chattable {
-	if !strings.HasPrefix(proposalNomineeNickname, "@") {
-		proposalNomineeNickname = fmt.Sprintf("@%s", proposalNomineeNickname)
-	}
+	proposalNomineeNickname = strings.TrimPrefix(proposalNomineeNickname, "@")
 
 	proposals, err := c.proposalRepository.GetManyByNomineeNickname(proposalNomineeNickname)
 	if err != nil {
@@ -189,7 +187,7 @@ func (c *createProposalCommand) handleWaitingForNicknameState(proposalNomineeNic
 
 	text := fmt.Sprintf(
 		"Перед тем, как мы перейдем к следующему шагу, тебе нужно убедиться правильно ли ты ввел никнейм пользователя. "+
-			"Для это просто нажми на него %s (если на него нельзя нажать, то похоже ты ввел несуществующий никнейм).\n\n"+
+			"Для это просто нажми на него @%s (если на него нельзя нажать, то похоже ты ввел несуществующий никнейм).\n\n"+
 			"Если вдруг ты ошибся, то ты всегда можешь начать сначала вызвав команду /cancel_proposal.\n\n"+
 			"Напиши ФИО человека, которого ты хочешь добавить.", proposalNomineeNickname,
 	)
