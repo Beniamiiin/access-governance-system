@@ -174,7 +174,7 @@ func (c *createProposalCommand) handleWaitingForNicknameState(proposalNomineeNic
 	}
 
 	foundUser, err := c.userRepository.GetOneByTelegramNickname(proposalNomineeNickname)
-	if err != nil {
+	if err != nil && err.Error() != "pg: no rows in result set" {
 		c.logger.Errorf("failed to get user by nominee nickname: %s", err)
 		return tgbot.DefaultErrorMessage(chatID)
 	} else if foundUser != nil {
