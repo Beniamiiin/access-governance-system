@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"access_governance_system/internal/db/models"
+
 	"github.com/go-pg/pg/v10"
 )
 
@@ -12,7 +13,8 @@ type userRepository struct {
 type UserRepository interface {
 	Create(request *models.User) (*models.User, error)
 	Update(request *models.User) (*models.User, error)
-	GetOne(telegramID int64) (*models.User, error)
+	GetOneByTelegramID(telegramID int64) (*models.User, error)
+	GetOneByTelegramNickname(telegramNickname string) (*models.User, error)
 	GetMany() ([]*models.User, error)
 }
 
@@ -56,12 +58,23 @@ func (r *userRepository) Update(request *models.User) (*models.User, error) {
 	return user, err
 }
 
-func (r *userRepository) GetOne(telegramID int64) (*models.User, error) {
+func (r *userRepository) GetOneByTelegramID(telegramID int64) (*models.User, error) {
 	user := &models.User{}
 
 	err := r.db.Model(user).
 		Relation("Proposals").
 		Where("telegram_id = ?", telegramID).
+		Select()
+
+	return user, err
+}
+
+func (r *userRepository) GetOneByTelegramNickname(telegramNickname string) (*models.User, error) {
+	user := &models.User{}
+
+	err := r.db.Model(user).
+		Relation("Proposals").
+		Where("telegram_nickname = ?", telegramNickname).
 		Select()
 
 	return user, err

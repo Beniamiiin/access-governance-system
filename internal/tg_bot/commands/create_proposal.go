@@ -175,6 +175,18 @@ func (c *createProposalCommand) handleWaitingForNicknameState(proposalNomineeNic
 		}
 	}
 
+	foundUser, err := c.userRepository.GetOneByTelegramNickname(proposalNomineeNickname)
+	if err != nil {
+		c.logger.Errorf("failed to get user by nominee nickname: %s", err)
+		return tgbot.DefaultErrorMessage(chatID)
+	} else if foundUser != nil {
+		c.logger.Warnf(
+			"user tried to create proposal for nominee with existing approved proposal: %s",
+			proposalNomineeNickname,
+		)
+		return tgbotapi.NewMessage(chatID, "Этот участник уже состоит в сообществе.")
+	}
+
 	text := fmt.Sprintf(
 		"Перед тем, как мы перейдем к следующему шагу, тебе нужно убедиться правильно ли ты ввел никнейм пользователя. "+
 			"Для это просто нажми на него %s (если на него нельзя нажать, то похоже ты ввел несуществующий никнейм).\n\n"+
