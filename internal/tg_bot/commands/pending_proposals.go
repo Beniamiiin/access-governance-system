@@ -6,6 +6,7 @@ import (
 	"access_governance_system/internal/db/repositories"
 	tgbot "access_governance_system/internal/tg_bot/extension"
 	"fmt"
+
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"go.uber.org/zap"
 )
@@ -45,7 +46,7 @@ func (c *pendingProposalsCommand) Start(text string, user *models.User, chatID i
 				message += fmt.Sprintf("Тип: %s\n", proposal.NomineeRole.String())
 			}
 
-			message += fmt.Sprintf("Никнейм: %s\n", proposal.NomineeTelegramNickname)
+			message += fmt.Sprintf("Участник: %s (@%s)\n", proposal.NomineeName, proposal.NomineeTelegramNickname)
 
 			if user.Role == models.UserRoleSeeder {
 				message += fmt.Sprintf("Комментарий: %s\n", proposal.Comment)

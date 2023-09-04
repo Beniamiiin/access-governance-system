@@ -6,6 +6,7 @@ import (
 	"access_governance_system/internal/db/repositories"
 	tgbot "access_governance_system/internal/tg_bot/extension"
 	"fmt"
+
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"go.uber.org/zap"
 )
@@ -45,7 +46,7 @@ func (c *approvedProposalsCommand) Start(text string, user *models.User, chatID 
 				message += fmt.Sprintf("Тип: %s\n", proposal.NomineeRole.String())
 			}
 
-			message += fmt.Sprintf("Никнейм: %s\n", proposal.NomineeTelegramNickname)
+			message += fmt.Sprintf("Участник: %s (@%s)\n", proposal.NomineeName, proposal.NomineeTelegramNickname)
 			message += fmt.Sprintf("Дата начала: %s\n", internal.Format(proposal.CreatedAt))
 			message += fmt.Sprintf("Дата окончания: %s\n", internal.Format(proposal.FinishedAt))
 			message += fmt.Sprintf("Результат: %s\n", proposal.Status.String())

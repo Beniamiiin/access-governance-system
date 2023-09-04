@@ -217,8 +217,7 @@ func (c *createProposalCommand) handleWaitingForReasonState(proposalDescription 
 
 	messageText := ""
 	messageText += fmt.Sprintf("Тип: %s\n", user.TempProposal.NomineeRole)
-	messageText += fmt.Sprintf("Никнейм: @%s\n", user.TempProposal.NomineeTelegramNickname)
-	messageText += fmt.Sprintf("ФИО: %s\n", user.TempProposal.NomineeName)
+	messageText += fmt.Sprintf("Участник: %s (@%s)\n", user.TempProposal.NomineeName, user.TempProposal.NomineeTelegramNickname)
 	messageText += fmt.Sprintf("Причина: %s\n", user.TempProposal.Comment)
 	messageText += fmt.Sprintln()
 	messageText += "Все правильно, отправляем предложение на голосование?"
