@@ -6,6 +6,7 @@ import (
 	"access_governance_system/internal/db/repositories"
 	tgbot "access_governance_system/internal/tg_bot/extension"
 	"fmt"
+	"strconv"
 	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -37,28 +38,35 @@ func (c *approvedProposalsCommand) Start(text string, user *models.User, chatID 
 		return tgbot.DefaultErrorMessage(chatID)
 	}
 
-	message := ""
+	var message tgbotapi.MessageConfig
+	var messageText string
 
 	if len(proposals) == 0 {
-		message = "Нет одобренных предложений"
+		messageText = "Нет одобренных предложений"
+		message = tgbotapi.NewMessage(chatID, messageText)
 	} else {
 		for _, proposal := range proposals {
 			if user.Role == models.UserRoleSeeder {
-				message += fmt.Sprintf("Тип: %s\n", proposal.NomineeRole.String())
+				messageText += fmt.Sprintf("Тип: %s\n", proposal.NomineeRole.String())
 			}
 
-			message += fmt.Sprintf("Участник: %s (@%s)\n", proposal.NomineeName, proposal.NomineeTelegramNickname)
-			message += fmt.Sprintf("Дата начала: %s\n", internal.Format(proposal.CreatedAt))
-			message += fmt.Sprintf("Дата окончания: %s\n", internal.Format(proposal.FinishedAt))
-			message += fmt.Sprintf("Результат: %s\n", proposal.Status.String())
-			message += fmt.Sprintln()
+			messageText += fmt.Sprintf("Участник: %s (@%s)\n", proposal.NomineeName, proposal.NomineeTelegramNickname)
+			messageText += fmt.Sprintf("Дата начала: %s\n", internal.Format(proposal.CreatedAt))
+			messageText += fmt.Sprintf("Дата окончания: %s\n", internal.Format(proposal.FinishedAt))
+			messageText += fmt.Sprintf("Результат: %s\n", proposal.Status.String())
+			messageText += fmt.Sprintln()
 
 			if user.Role == models.UserRoleSeeder {
-				pollChatID := strings.TrimPrefix(string(proposal.Poll.ChatID), "-100")
-				message += fmt.Sprintf("Обсуждение можно найти [тут](https://t.me/c/%s/%d)\n", pollChatID, proposal.Poll.DiscussionMessageID)
+				pollChatID := strings.TrimPrefix(strconv.Itoa(proposal.Poll.ChatID), "-100")
+				messageText += fmt.Sprintf("Обсуждение можно найти [тут](https://t.me/c/%s/%d)\n", pollChatID, proposal.Poll.DiscussionMessageID)
 			}
+
+			parseMode := tgbotapi.ModeMarkdownV2
+			messageText = tgbotapi.EscapeText(parseMode, messageText)
+			message = tgbotapi.NewMessage(chatID, messageText)
+			message.ParseMode = parseMode
 		}
 	}
 
-	return tgbotapi.NewMessage(chatID, message)
+	return message
 }
