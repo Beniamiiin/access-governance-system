@@ -6,6 +6,7 @@ import (
 	"access_governance_system/internal/db/repositories"
 	tgbot "access_governance_system/internal/tg_bot/extension"
 	"fmt"
+	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"go.uber.org/zap"
@@ -51,7 +52,11 @@ func (c *approvedProposalsCommand) Start(text string, user *models.User, chatID 
 			message += fmt.Sprintf("Дата окончания: %s\n", internal.Format(proposal.FinishedAt))
 			message += fmt.Sprintf("Результат: %s\n", proposal.Status.String())
 			message += fmt.Sprintln()
-			message += fmt.Sprintf("Обсуждение можно найти [тут](https://t.me/c/%d/%d)\n", proposal.Poll.ChatID, proposal.Poll.DiscussionMessageID)
+
+			if user.Role == models.UserRoleSeeder {
+				pollChatID := strings.TrimPrefix(string(proposal.Poll.ChatID), "-100")
+				message += fmt.Sprintf("Обсуждение можно найти [тут](https://t.me/c/%s/%d)\n", pollChatID, proposal.Poll.DiscussionMessageID)
+			}
 		}
 	}
 
