@@ -58,7 +58,6 @@ func (c *pendingProposalsCommand) Start(text string, user *models.User, chatID i
 
 			messageText += fmt.Sprintf("Дата начала: %s\n", internal.Format(proposal.CreatedAt))
 			messageText += fmt.Sprintf("Дата окончания: %s\n", internal.Format(proposal.FinishedAt))
-			messageText += fmt.Sprintln()
 
 			if user.Role == models.UserRoleSeeder {
 				pollChatID := strings.TrimPrefix(strconv.Itoa(proposal.Poll.ChatID), "-100")
@@ -66,8 +65,15 @@ func (c *pendingProposalsCommand) Start(text string, user *models.User, chatID i
 				messageText += fmt.Sprintf("Обсуждение можно найти [тут](https://t.me/c/%s/%d)\n", pollChatID, proposal.Poll.DiscussionMessageID)
 			}
 
+			messageText += fmt.Sprintln()
+
+			fmt.Println(1, messageText)
+
+			parseMode := tgbotapi.ModeMarkdownV2
+			messageText = tgbotapi.EscapeText(parseMode, messageText)
+			fmt.Println(2, messageText)
 			message = tgbotapi.NewMessage(chatID, messageText)
-			message.ParseMode = tgbotapi.ModeMarkdownV2
+			message.ParseMode = parseMode
 		}
 	}
 
