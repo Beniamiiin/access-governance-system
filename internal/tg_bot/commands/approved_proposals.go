@@ -65,6 +65,8 @@ func (c *approvedProposalsCommand) Start(text string, user *models.User, chatID 
 				pollChatID := strings.TrimPrefix(strconv.Itoa(proposal.Poll.ChatID), "-100")
 				messageText += fmt.Sprintf("Обсуждение можно найти [тут](https://t.me/c/%s/%d)\n", pollChatID, proposal.Poll.DiscussionMessageID)
 			}
+
+			proposalsTexts = append(proposalsTexts, messageText)
 		}
 
 		message = tgbotapi.NewMessage(chatID, strings.Join(proposalsTexts, "\n"))
