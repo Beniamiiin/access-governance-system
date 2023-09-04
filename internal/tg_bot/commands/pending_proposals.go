@@ -66,10 +66,8 @@ func (c *pendingProposalsCommand) Start(text string, user *models.User, chatID i
 				messageText += fmt.Sprintf("Обсуждение можно найти [тут](https://t.me/c/%s/%d)\n", pollChatID, proposal.Poll.DiscussionMessageID)
 			}
 
-			parseMode := tgbotapi.ModeMarkdownV2
-			messageText = tgbotapi.EscapeText(parseMode, messageText)
 			message = tgbotapi.NewMessage(chatID, messageText)
-			message.ParseMode = parseMode
+			message.ParseMode = tgbotapi.ModeMarkdownV2
 		}
 	}
 
