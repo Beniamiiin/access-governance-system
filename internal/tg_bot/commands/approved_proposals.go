@@ -39,13 +39,17 @@ func (c *approvedProposalsCommand) Start(text string, user *models.User, chatID 
 	}
 
 	var message tgbotapi.MessageConfig
-	var messageText string
 
 	if len(proposals) == 0 {
-		messageText = "Нет одобренных предложений"
-		message = tgbotapi.NewMessage(chatID, messageText)
+		message = tgbotapi.NewMessage(chatID, "Нет одобренных предложений")
 	} else {
+		parseMode := tgbotapi.ModeMarkdownV2
+
+		proposalsTexts := make([]string, 0, len(proposals))
+
 		for _, proposal := range proposals {
+			var messageText string
+
 			if user.Role == models.UserRoleSeeder {
 				messageText += fmt.Sprintf("Тип: %s\n", proposal.NomineeRole.String())
 			}
@@ -54,18 +58,17 @@ func (c *approvedProposalsCommand) Start(text string, user *models.User, chatID 
 			messageText += fmt.Sprintf("Дата начала: %s\n", internal.Format(proposal.CreatedAt))
 			messageText += fmt.Sprintf("Дата окончания: %s\n", internal.Format(proposal.FinishedAt))
 			messageText += fmt.Sprintf("Результат: %s\n", proposal.Status.String())
+
 			if user.Role == models.UserRoleSeeder {
+				messageText = tgbotapi.EscapeText(parseMode, messageText)
+
 				pollChatID := strings.TrimPrefix(strconv.Itoa(proposal.Poll.ChatID), "-100")
 				messageText += fmt.Sprintf("Обсуждение можно найти [тут](https://t.me/c/%s/%d)\n", pollChatID, proposal.Poll.DiscussionMessageID)
 			}
-
-			messageText += fmt.Sprintln()
-
-			parseMode := tgbotapi.ModeMarkdownV2
-			messageText = tgbotapi.EscapeText(parseMode, messageText)
-			message = tgbotapi.NewMessage(chatID, messageText)
-			message.ParseMode = parseMode
 		}
+
+		message = tgbotapi.NewMessage(chatID, strings.Join(proposalsTexts, "\n"))
+		message.ParseMode = parseMode
 	}
 
 	return message
