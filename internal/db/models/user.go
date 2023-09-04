@@ -13,6 +13,11 @@ const (
 	UserRoleSeeder UserRole = "seeder"
 )
 
+type TelegramState struct {
+	LastCommand      string
+	LastCommandState string
+}
+
 func (r UserRole) String() string {
 	return string(r)
 }
@@ -27,7 +32,7 @@ type User struct {
 	TelegramNickname string        `json:"telegram_nickname" pg:",notnull,unique"`
 	DiscordID        int           `json:"discord_id"`
 	Role             UserRole      `json:"role" pg:"type:UserRole,notnull,default:'guest'"`
-	Proposals        []Proposal    `json:"proposals" pg:"rel:has-many"`
+	Proposals        []Proposal    `json:"proposals" pg:"rel:has-many,fk:user_id"`
 	TempProposal     Proposal      `json:"temp_proposal"`
 	TelegramState    TelegramState `json:"telegram_state"`
 }

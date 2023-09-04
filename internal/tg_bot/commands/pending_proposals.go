@@ -55,6 +55,8 @@ func (c *pendingProposalsCommand) Start(text string, user *models.User, chatID i
 			message += fmt.Sprintf("Дата начала: %s\n", internal.Format(proposal.CreatedAt))
 			message += fmt.Sprintf("Дата окончания: %s\n", internal.Format(proposal.FinishedAt))
 			message += fmt.Sprintln()
+			message += fmt.Sprintf("Голосование можно найти [тут](https://t.me/c/%d/%d)\n", proposal.Poll.ChatID, proposal.Poll.PollMessageID)
+			message += fmt.Sprintf("Обсуждение можно найти [тут](https://t.me/c/%d/%d)\n", proposal.Poll.ChatID, proposal.Poll.DiscussionMessageID)
 		}
 	}
 

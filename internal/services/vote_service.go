@@ -1,6 +1,7 @@
 package services
 
 import (
+	"access_governance_system/internal/db/models"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -15,17 +16,13 @@ type poll struct {
 	DueDate     string `json:"due_date"`
 }
 
-type createPollResponseData struct {
-	ID int `json:"id"`
-}
-
 type service struct {
 	client  *http.Client
 	baseURL string
 }
 
 type VoteService interface {
-	CreatePoll(title, description string, dueDate time.Time) (int, error)
+	CreatePoll(title, description string, dueDate time.Time) (models.Poll, error)
 }
 
 func NewVoteService(baseURL string) VoteService {
@@ -35,19 +32,19 @@ func NewVoteService(baseURL string) VoteService {
 	}
 }
 
-func (s *service) CreatePoll(title, description string, dueDate time.Time) (int, error) {
+func (s *service) CreatePoll(title, description string, dueDate time.Time) (models.Poll, error) {
 	jsonData, err := json.Marshal(poll{
 		Title:       title,
 		Description: description,
 		DueDate:     dueDate.Format("2006-01-02T15:04:05"),
 	})
 	if err != nil {
-		return 0, err
+		return models.Poll{}, err
 	}
 
 	request, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/%s", s.baseURL, "poll"), bytes.NewBuffer(jsonData))
 	if err != nil {
-		return 0, err
+		return models.Poll{}, err
 	}
 
 	request.Header.Add("Content-Type", "application/json; charset=utf-8")
@@ -55,18 +52,18 @@ func (s *service) CreatePoll(title, description string, dueDate time.Time) (int,
 	fmt.Println(request.URL, string(jsonData))
 	response, err := s.client.Do(request)
 	if err != nil {
-		return 0, err
+		return models.Poll{}, err
 	}
 
 	responseBody, err := io.ReadAll(response.Body)
 	if err != nil {
-		return 0, err
+		return models.Poll{}, err
 	}
 
-	responseData := new(createPollResponseData)
+	responseData := new(models.Poll)
 	if err := json.Unmarshal(responseBody, responseData); err != nil {
-		return 0, err
+		return models.Poll{}, err
 	}
 
-	return responseData.ID, nil
+	return *responseData, nil
 }

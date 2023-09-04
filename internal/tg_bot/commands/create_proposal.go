@@ -249,14 +249,17 @@ func (c *createProposalCommand) handleWaitingForConfirmState(confirmationState s
 	title := fmt.Sprintf("%s (%s)", user.TempProposal.NomineeName, user.TempProposal.NomineeTelegramNickname)
 	description := user.TempProposal.Comment
 	dueDate := time.Date(finishedAt.Year(), finishedAt.Month(), finishedAt.Day(), 12, 0, 0, 0, finishedAt.Location())
-	pollID, err := c.voteService.CreatePoll(title, description, dueDate)
+	poll, err := c.voteService.CreatePoll(title, description, dueDate)
 	if err != nil {
 		return tgbot.ErrorMessage(chatID, err.Error())
 	}
 
 	user.TempProposal.CreatedAt = createdAt
 	user.TempProposal.FinishedAt = finishedAt
-	user.TempProposal.PollID = pollID
+
+	if poll != (models.Poll{}) {
+		user.TempProposal.Poll = poll
+	}
 
 	proposal, err := c.proposalRepository.Create(&user.TempProposal)
 	if err != nil {

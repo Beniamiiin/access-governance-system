@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"access_governance_system/internal/db/models"
+	"errors"
 
 	"github.com/go-pg/pg/v10"
 )
@@ -38,7 +39,7 @@ func (r *userRepository) Create(request *models.User) (*models.User, error) {
 		Relation("Proposals").
 		Where("id = ?", request.ID).
 		Select()
-	if err != nil && err.Error() == "pg: no rows in result set" {
+	if errors.Is(err, pg.ErrNoRows) {
 		return nil, nil
 	}
 
@@ -57,7 +58,7 @@ func (r *userRepository) Update(request *models.User) (*models.User, error) {
 		Relation("Proposals").
 		Where("id = ?", request.ID).
 		Select()
-	if err != nil && err.Error() == "pg: no rows in result set" {
+	if errors.Is(err, pg.ErrNoRows) {
 		return nil, nil
 	}
 
@@ -71,7 +72,7 @@ func (r *userRepository) GetOneByTelegramID(telegramID int64) (*models.User, err
 		Relation("Proposals").
 		Where("telegram_id = ?", telegramID).
 		Select()
-	if err != nil && err.Error() == "pg: no rows in result set" {
+	if errors.Is(err, pg.ErrNoRows) {
 		return nil, nil
 	}
 
@@ -85,7 +86,7 @@ func (r *userRepository) GetOneByTelegramNickname(telegramNickname string) (*mod
 		Relation("Proposals").
 		Where("telegram_nickname = ?", telegramNickname).
 		Select()
-	if err != nil && err.Error() == "pg: no rows in result set" {
+	if errors.Is(err, pg.ErrNoRows) {
 		return nil, nil
 	}
 
