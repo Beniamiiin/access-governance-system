@@ -60,25 +60,25 @@ func (c *createProposalCommand) CanHandle(command string) bool {
 	return command == createProposalCommandName
 }
 
-func (c *createProposalCommand) Start(text string, user *models.User, chatID int64) tgbotapi.Chattable {
-	if text == createProposalCommandName {
-		return c.handleCreateProposalCommand(user, chatID)
+func (c *createProposalCommand) Handle(command string, user *models.User, chatID int64) []tgbotapi.Chattable {
+	if command == createProposalCommandName {
+		return []tgbotapi.Chattable{c.handleCreateProposalCommand(user, chatID)}
 	}
 
 	switch user.TelegramState.LastCommandState {
 	case waitingForTypeState:
-		return c.handleWaitingForTypeState(text, user, chatID)
+		return []tgbotapi.Chattable{c.handleWaitingForTypeState(command, user, chatID)}
 	case waitingForNicknameState:
-		return c.handleWaitingForNicknameState(text, user, chatID)
+		return []tgbotapi.Chattable{c.handleWaitingForNicknameState(command, user, chatID)}
 	case waitingForNameState:
-		return c.handleWaitingForNameState(text, user, chatID)
+		return []tgbotapi.Chattable{c.handleWaitingForNameState(command, user, chatID)}
 	case waitingForReasonState:
-		return c.handleWaitingForReasonState(text, user, chatID)
+		return []tgbotapi.Chattable{c.handleWaitingForReasonState(command, user, chatID)}
 	case waitingForConfirmState:
-		return c.handleWaitingForConfirmState(text, user, chatID)
+		return []tgbotapi.Chattable{c.handleWaitingForConfirmState(command, user, chatID)}
 	default:
 		c.logger.Errorf("user has unknown state: %s", user.TelegramState.LastCommandState)
-		return nil
+		return []tgbotapi.Chattable{tgbot.DefaultErrorMessage(chatID)}
 	}
 }
 
@@ -240,18 +240,19 @@ func (c *createProposalCommand) handleWaitingForConfirmState(confirmationState s
 		user.TempProposal = models.Proposal{}
 		user.TelegramState = models.TelegramState{}
 		_ = c.updateUser(user)
-		return c.Start(createProposalCommandName, user, chatID)
+		return c.handleCreateProposalCommand(user, chatID)
 	}
 
 	createdAt := time.Now()
 	finishedAt := createdAt.AddDate(0, 0, c.appConfig.VotingDurationDays)
 
-	title := fmt.Sprintf("%s (%s)", user.TempProposal.NomineeName, user.TempProposal.NomineeTelegramNickname)
-	description := user.TempProposal.Comment
+	title := user.TempProposal.NomineeName
+	description := fmt.Sprintf("@%s предлагает добавить @%s в сообщество\n\nКомментарий: %s", user.TelegramNickname, user.TempProposal.NomineeTelegramNickname, user.TempProposal.Comment)
 	dueDate := time.Date(finishedAt.Year(), finishedAt.Month(), finishedAt.Day(), 12, 0, 0, 0, finishedAt.Location())
 	poll, err := c.voteService.CreatePoll(title, description, dueDate)
 	if err != nil {
-		return tgbot.ErrorMessage(chatID, err.Error())
+		c.logger.Errorw("failed to create poll", "error", err)
+		return tgbot.DefaultErrorMessage(chatID)
 	}
 
 	user.TempProposal.CreatedAt = createdAt

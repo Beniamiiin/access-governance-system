@@ -25,10 +25,10 @@ const (
 )
 
 type Poll struct {
-	ID                  int `json:"id"`
-	ChatID              int `json:"chat_id"`
-	PollMessageID       int `json:"poll_message_id"`
-	DiscussionMessageID int `json:"discussion_message_id"`
+	ID                  int   `json:"id"`
+	ChatID              int64 `json:"chat_id"`
+	PollMessageID       int   `json:"poll_message_id"`
+	DiscussionMessageID int   `json:"discussion_message_id"`
 }
 
 type Proposal struct {

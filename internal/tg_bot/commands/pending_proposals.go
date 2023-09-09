@@ -31,52 +31,57 @@ func (c *pendingProposalsCommand) CanHandle(command string) bool {
 	return command == pendingProposalsCommandName
 }
 
-func (c *pendingProposalsCommand) Start(text string, user *models.User, chatID int64) tgbotapi.Chattable {
+func (c *pendingProposalsCommand) Handle(text string, user *models.User, chatID int64) []tgbotapi.Chattable {
 	proposals, err := c.proposalRepository.GetManyByStatus(models.ProposalStatusCreated)
 	if err != nil {
 		c.logger.Errorw("failed to get proposals", "error", err)
-		return tgbot.DefaultErrorMessage(chatID)
+		return []tgbotapi.Chattable{tgbot.DefaultErrorMessage(chatID)}
 	}
 
-	var message tgbotapi.MessageConfig
+	messages := make([]tgbotapi.Chattable, 0, len(proposals))
 
-	if len(proposals) == 0 {
-		message = tgbotapi.NewMessage(chatID, "Нет предложений на рассмотрении")
-	} else {
-		parseMode := tgbotapi.ModeMarkdownV2
+	for _, proposal := range proposals {
+		var messageText string
 
-		proposalsTexts := make([]string, 0, len(proposals))
-
-		for _, proposal := range proposals {
-			var messageText string
-
-			if user.Role == models.UserRoleSeeder {
-				messageText += fmt.Sprintf("Тип: %s\n", proposal.NomineeRole.String())
-			}
-
-			messageText += fmt.Sprintf("Участник: %s (@%s)\n", proposal.NomineeName, proposal.NomineeTelegramNickname)
-
-			if user.Role == models.UserRoleSeeder {
-				messageText += fmt.Sprintf("Комментарий: %s\n", proposal.Comment)
-			}
-
-			messageText += fmt.Sprintf("Дата начала: %s\n", internal.Format(proposal.CreatedAt))
-			messageText += fmt.Sprintf("Дата окончания: %s\n", internal.Format(proposal.FinishedAt))
-
-			if user.Role == models.UserRoleSeeder {
-				messageText = tgbotapi.EscapeText(parseMode, messageText)
-
-				pollChatID := strings.TrimPrefix(strconv.Itoa(proposal.Poll.ChatID), "-100")
-				messageText += fmt.Sprintf("Голосование можно найти [тут](https://t.me/c/%s/%d)\n", pollChatID, proposal.Poll.PollMessageID)
-				messageText += fmt.Sprintf("Обсуждение можно найти [тут](https://t.me/c/%s/%d)\n", pollChatID, proposal.Poll.DiscussionMessageID)
-			}
-
-			proposalsTexts = append(proposalsTexts, messageText)
+		if user.Role == models.UserRoleSeeder {
+			messageText += fmt.Sprintf("Тип: %s\n", proposal.NomineeRole.String())
 		}
 
-		message = tgbotapi.NewMessage(chatID, strings.Join(proposalsTexts, "\n"))
-		message.ParseMode = parseMode
+		messageText += fmt.Sprintf("Участник: %s (@%s)\n", proposal.NomineeName, proposal.NomineeTelegramNickname)
+
+		if user.Role == models.UserRoleSeeder {
+			messageText += fmt.Sprintf("Комментарий: %s\n", proposal.Comment)
+		}
+
+		messageText += fmt.Sprintf("Дата начала: %s\n", internal.Format(proposal.CreatedAt))
+		messageText += fmt.Sprintf("Дата окончания: %s\n", internal.Format(proposal.FinishedAt))
+
+		message := tgbotapi.NewMessage(chatID, messageText)
+
+		switch user.Role {
+		case models.UserRoleSeeder:
+			pollChatID := strings.TrimPrefix(strconv.Itoa(proposal.Poll.ChatID), "-100")
+
+			message.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(
+				tgbotapi.NewInlineKeyboardRow(
+					tgbotapi.NewInlineKeyboardButtonURL("Проголосовать", fmt.Sprintf("https://t.me/c/%s/%d", pollChatID, proposal.Poll.PollMessageID)),
+					tgbotapi.NewInlineKeyboardButtonURL("Обсудить", fmt.Sprintf("https://t.me/c/%s/%d", pollChatID, proposal.Poll.DiscussionMessageID)),
+				),
+			)
+		case models.UserRoleMember:
+			message.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(
+				tgbotapi.NewInlineKeyboardRow(
+					tgbotapi.NewInlineKeyboardButtonData("Оставить комментарий", fmt.Sprintf("add_comment:%d", proposal.ID)),
+				),
+			)
+		}
+
+		messages = append(messages, message)
 	}
 
-	return message
+	if len(messages) == 0 {
+		return []tgbotapi.Chattable{tgbotapi.NewMessage(chatID, "Нет предложений на рассмотрении")}
+	}
+
+	return messages
 }

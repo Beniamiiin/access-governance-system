@@ -5,7 +5,9 @@ import (
 	"access_governance_system/internal/db/models"
 	"access_governance_system/internal/db/repositories"
 	"access_governance_system/internal/tg_bot/commands"
+	tgbot "access_governance_system/internal/tg_bot/extension"
 	"fmt"
+	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"go.uber.org/zap"
@@ -15,27 +17,71 @@ type accessGovernanceBotCommandHandler struct {
 	appConfig      configs.App
 	userRepository repositories.UserRepository
 	logger         *zap.SugaredLogger
+
+	commands []commands.Command
 }
 
-func NewAccessGovernanceBotCommandHandler(appConfig configs.App, userRepository repositories.UserRepository, logger *zap.SugaredLogger) CommandHandler {
+func NewAccessGovernanceBotCommandHandler(
+	appConfig configs.App,
+	userRepository repositories.UserRepository,
+	logger *zap.SugaredLogger,
+	commands []commands.Command,
+) CommandHandler {
 	return &accessGovernanceBotCommandHandler{
 		appConfig:      appConfig,
 		userRepository: userRepository,
 		logger:         logger,
+		commands:       commands,
 	}
 }
 
-func (h *accessGovernanceBotCommandHandler) Handle(commands []commands.Command, message *tgbotapi.Message) tgbotapi.Chattable {
+func (h *accessGovernanceBotCommandHandler) Handle(update tgbotapi.Update) []tgbotapi.Chattable {
 	h.logger.Info("received message")
 
-	if message == nil {
-		h.logger.Warn("received non-Message updates")
-		return nil
+	message := update.Message
+	callbackQuery := update.CallbackQuery
+
+	if message == nil && callbackQuery == nil {
+		h.logger.Warn("received unknown updates")
+		return []tgbotapi.Chattable{}
 	}
 
-	chatID := message.Chat.ID
+	var (
+		chatID       int64
+		telegramUser *tgbotapi.User
+	)
 
-	user, err := h.userRepository.GetOneByTelegramID(message.From.ID)
+	if message != nil {
+		chatID = message.Chat.ID
+		telegramUser = message.From
+	} else if callbackQuery != nil {
+		chatID = callbackQuery.Message.Chat.ID
+		telegramUser = callbackQuery.From
+	}
+
+	user, errMessage := h.createUserIfNeeded(telegramUser.ID, telegramUser.UserName, chatID)
+	if errMessage != nil {
+		return []tgbotapi.Chattable{errMessage}
+	}
+
+	if message != nil {
+		if message.IsCommand() {
+			return h.tryToHandleCommand(message.Command(), h.commands, user, chatID)
+		} else if user.TelegramState.LastCommand != "" {
+			return h.tryToHandleSubCommand(user.TelegramState.LastCommand, message.Text, h.commands, user, chatID)
+		}
+	}
+
+	if callbackQuery != nil {
+		return h.tryToHandleQueryCallback(callbackQuery.Data, h.commands, user, chatID)
+	}
+
+	h.logger.Error("received unknown message")
+	return []tgbotapi.Chattable{}
+}
+
+func (h *accessGovernanceBotCommandHandler) createUserIfNeeded(userID int64, userName string, chatID int64) (*models.User, tgbotapi.Chattable) {
+	user, err := h.userRepository.GetOneByTelegramID(userID)
 	if err != nil {
 		h.logger.Errorw("failed to get user", "error", err)
 	}
@@ -43,18 +89,18 @@ func (h *accessGovernanceBotCommandHandler) Handle(commands []commands.Command, 
 	if user == nil {
 		isItSeeder := false
 
-		for _, seeder := range h.appConfig.InitialSeeders {
-			if message.From.UserName == seeder {
+		for _, seederName := range h.appConfig.InitialSeeders {
+			if userName == seederName {
 				user = &models.User{
-					TelegramID:       message.From.ID,
-					TelegramNickname: message.From.UserName,
+					TelegramID:       userID,
+					TelegramNickname: userName,
 					Role:             models.UserRoleSeeder,
 				}
 
 				user, err = h.userRepository.Create(user)
 				if err != nil {
 					h.logger.Errorw("failed to create user", "error", err)
-					return nil
+					return nil, tgbot.DefaultErrorMessage(chatID)
 				}
 
 				isItSeeder = true
@@ -63,46 +109,72 @@ func (h *accessGovernanceBotCommandHandler) Handle(commands []commands.Command, 
 		}
 
 		if !isItSeeder {
-			return tgbotapi.NewMessage(chatID, fmt.Sprintf("Привет! К сожалению, ты не участник сообщества %s.", h.appConfig.CommunityName))
+			return nil, tgbotapi.NewMessage(chatID, fmt.Sprintf("Привет! К сожалению, ты не участник сообщества %s.", h.appConfig.CommunityName))
 		}
 	}
 
-	if message.IsCommand() {
-		command := message.Command()
+	return user, nil
+}
 
-		for _, handler := range commands {
-			if handler.CanHandle(command) {
-				user.TelegramState.LastCommand = command
-				user, err = h.userRepository.Update(user)
-				if err != nil {
-					h.logger.Errorw("failed to update user", "error", err)
-				}
+func (h *accessGovernanceBotCommandHandler) tryToHandleCommand(command string, commands []commands.Command, user *models.User, chatID int64) []tgbotapi.Chattable {
+	for _, handler := range commands {
+		if handler.CanHandle(command) {
+			user.TelegramState.LastCommand = command
 
-				return handler.Start(command, user, chatID)
+			user, err := h.userRepository.Update(user)
+			if err != nil {
+				h.logger.Errorw("failed to update user", "error", err)
 			}
+
+			return handler.Handle(command, user, chatID)
 		}
-
-		h.logger.Errorf("received unknown command: %s", command)
-		return nil
-	} else if user.TelegramState.LastCommand != "" {
-		command := user.TelegramState.LastCommand
-		subCommand := message.Text
-
-		for _, handler := range commands {
-			if handler.CanHandle(command) {
-				responseMessage := handler.Start(subCommand, user, chatID)
-				if responseMessage == nil {
-					h.logger.Errorf("failed to handle subcommand: %s", subCommand)
-					break
-				}
-				return responseMessage
-			}
-		}
-
-		h.logger.Errorf("received unknown subcommand: %s for command: %s", subCommand, command)
-		return nil
 	}
 
-	h.logger.Error("received unknown message")
-	return nil
+	h.logger.Errorf("received unknown command: %s", command)
+	return []tgbotapi.Chattable{}
+}
+
+func (h *accessGovernanceBotCommandHandler) tryToHandleSubCommand(command, subCommand string, commands []commands.Command, user *models.User, chatID int64) []tgbotapi.Chattable {
+	command = strings.Split(command, ":")[0]
+
+	for _, handler := range commands {
+		if handler.CanHandle(command) {
+			responseMessage := handler.Handle(subCommand, user, chatID)
+			if responseMessage == nil {
+				h.logger.Errorf("failed to handle subcommand: %s", subCommand)
+				break
+			}
+
+			return responseMessage
+		}
+	}
+
+	h.logger.Errorf("received unknown subcommand: %s for command: %s", subCommand, command)
+	return []tgbotapi.Chattable{}
+}
+
+func (h *accessGovernanceBotCommandHandler) tryToHandleQueryCallback(query string, commands []commands.Command, user *models.User, chatID int64) []tgbotapi.Chattable {
+	parts := strings.Split(query, ":")
+	if len(parts) == 0 {
+		h.logger.Error("received empty query callback")
+		return []tgbotapi.Chattable{}
+	}
+
+	command := parts[0]
+
+	for _, handler := range commands {
+		if handler.CanHandle(command) {
+			user.TelegramState.LastCommand = query
+
+			user, err := h.userRepository.Update(user)
+			if err != nil {
+				h.logger.Errorw("failed to update user", "error", err)
+			}
+
+			return handler.Handle(query, user, chatID)
+		}
+	}
+
+	h.logger.Errorf("received unknown command: %s", command)
+	return []tgbotapi.Chattable{}
 }

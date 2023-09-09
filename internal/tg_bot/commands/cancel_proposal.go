@@ -30,15 +30,15 @@ func (c *cancelProposalCommand) CanHandle(command string) bool {
 	return command == cancelProposalCommandName
 }
 
-func (c *cancelProposalCommand) Start(text string, user *models.User, chatID int64) tgbotapi.Chattable {
+func (c *cancelProposalCommand) Handle(text string, user *models.User, chatID int64) []tgbotapi.Chattable {
 	user.TempProposal = models.Proposal{}
 	user.TelegramState = models.TelegramState{}
 	_, err := c.userRepository.Update(user)
 	if err != nil {
 		c.logger.Errorw("failed to update user", "error", err)
-		return tgbot.DefaultErrorMessage(chatID)
+		return []tgbotapi.Chattable{tgbot.DefaultErrorMessage(chatID)}
 	}
 
 	message := tgbotapi.NewMessage(chatID, "Предыдущее незавершенное предложение удалено. Выберите команду /create_proposal для создания нового.")
-	return message
+	return []tgbotapi.Chattable{message}
 }

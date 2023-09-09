@@ -7,11 +7,12 @@ import (
 )
 
 type AccessGovernanceBotConfig struct {
-	App     App
-	DB      DB
-	Logger  Logger
-	Bot     AccessGovernanceBot
-	VoteAPI VoteAPI
+	App                 App
+	DB                  DB
+	Logger              Logger
+	AccessGovernanceBot AccessGovernanceBot
+	VoteBot             VoteBot
+	VoteAPI             VoteAPI
 }
 
 func LoadAccessGovernanceBotConfig() (AccessGovernanceBotConfig, error) {

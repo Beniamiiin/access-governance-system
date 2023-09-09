@@ -5,9 +5,10 @@ import (
 	"access_governance_system/internal/db/models"
 	"access_governance_system/internal/db/repositories"
 	"fmt"
+	"strings"
+
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"go.uber.org/zap"
-	"strings"
 )
 
 const startCommandName = "start"
@@ -30,7 +31,7 @@ func (c *startCommand) CanHandle(command string) bool {
 	return command == startCommandName
 }
 
-func (c *startCommand) Start(text string, user *models.User, chatID int64) tgbotapi.Chattable {
+func (c *startCommand) Handle(text string, user *models.User, chatID int64) []tgbotapi.Chattable {
 	parseMode := tgbotapi.ModeMarkdownV2
 
 	messageText := tgbotapi.EscapeText(parseMode, fmt.Sprintf(`
@@ -45,5 +46,5 @@ func (c *startCommand) Start(text string, user *models.User, chatID int64) tgbot
 	messageText = strings.Replace(messageText, "Menu", "*Menu*", -1)
 	message := tgbotapi.NewMessage(chatID, messageText)
 	message.ParseMode = parseMode
-	return message
+	return []tgbotapi.Chattable{message}
 }
