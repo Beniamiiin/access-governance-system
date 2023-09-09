@@ -88,7 +88,7 @@ func (c *addCommentCommand) handleWaitingForCommentState(comment string, user *m
 		return tgbot.DefaultErrorMessage(chatID)
 	}
 
-	message := tgbotapi.NewMessage(user.TempProposal.Poll.ChatID, comment)
+	message := tgbotapi.NewMessage(int64(user.TempProposal.Poll.ChatID), comment)
 	message.BaseChat.ReplyToMessageID = user.TempProposal.Poll.DiscussionMessageID
 
 	_, err = bot.Send(message)
