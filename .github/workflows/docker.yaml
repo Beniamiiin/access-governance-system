@@ -36,5 +36,6 @@ jobs:
             LOKI_URL=${{ secrets.LOKI_URL }}
             DB_URL=${{ secrets.DB_URL }}
             TELEGRAM_ACCESS_GOVERNANCE_BOT_TOKEN=${{ secrets.TELEGRAM_ACCESS_GOVERNANCE_BOT_TOKEN }}
+            TELEGRAM_VOTE_BOT_TOKEN=${{ secrets.TELEGRAM_VOTE_BOT_TOKEN }}
           push: true
           tags: ghcr.io/beniamiiin/access-governance-system:latest
