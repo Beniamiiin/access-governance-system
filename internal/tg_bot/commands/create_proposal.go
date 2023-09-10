@@ -89,13 +89,16 @@ func (c *createProposalCommand) Handle(command string, user *models.User, chatID
 
 			text := fmt.Sprintf("%s предлагает добавить %s в сообщество", user.TelegramNickname, user.TempProposal.NomineeTelegramNickname)
 			message := tgbotapi.NewMessage(c.config.App.MembersChannelID, text)
-			message.BaseChat.ReplyToMessageID = user.TempProposal.Poll.PollMessageID
 
 			_, err = bot.Send(message)
 			if err != nil {
 				c.logger.Errorf("could not send message: %v", err)
 				_, _ = bot.Send(tgbot.DefaultErrorMessage(chatID))
 			}
+
+			user.TempProposal = models.Proposal{}
+			user.TelegramState = models.TelegramState{}
+			_ = c.updateUser(user)
 		default:
 			c.logger.Errorf("user has unknown state: %s", user.TelegramState.LastCommandState)
 			message = tgbot.DefaultErrorMessage(chatID)
@@ -303,10 +306,6 @@ func (c *createProposalCommand) handleWaitingForConfirmState(confirmationState s
 
 	message := tgbotapi.NewMessage(chatID, "Предложение отправлено на голосование.")
 	message.ReplyMarkup = tgbotapi.NewRemoveKeyboard(true)
-
-	user.TempProposal = models.Proposal{}
-	user.TelegramState = models.TelegramState{}
-	_ = c.updateUser(user)
 
 	return message
 }
