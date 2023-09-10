@@ -89,7 +89,7 @@ func (c *addCommentCommand) handleWaitingForCommentState(comment string, user *m
 		return tgbot.DefaultErrorMessage(chatID)
 	}
 
-	text := fmt.Sprintf("%s: %s", user.TelegramNickname, comment)
+	text := fmt.Sprintf("@%s: %s", user.TelegramNickname, comment)
 	message := tgbotapi.NewMessage(int64(user.TempProposal.Poll.ChatID), text)
 	message.BaseChat.ReplyToMessageID = user.TempProposal.Poll.PollMessageID
 
