@@ -33,11 +33,12 @@ var (
 )
 
 type createProposalCommand struct {
-	appConfig          configs.App
-	userRepository     repositories.UserRepository
-	proposalRepository repositories.ProposalRepository
-	voteService        services.VoteService
-	logger             *zap.SugaredLogger
+	appConfig           configs.App
+	userRepository      repositories.UserRepository
+	proposalRepository  repositories.ProposalRepository
+	voteService         services.VoteService
+	accessGovernanceBot configs.AccessGovernanceBot
+	logger              *zap.SugaredLogger
 }
 
 func NewCreateProposalCommand(
@@ -45,14 +46,16 @@ func NewCreateProposalCommand(
 	userRepository repositories.UserRepository,
 	proposalRepository repositories.ProposalRepository,
 	voteService services.VoteService,
+	accessGovernanceBot configs.AccessGovernanceBot,
 	logger *zap.SugaredLogger,
 ) Command {
 	return &createProposalCommand{
-		appConfig:          appConfig,
-		userRepository:     userRepository,
-		proposalRepository: proposalRepository,
-		voteService:        voteService,
-		logger:             logger,
+		appConfig:           appConfig,
+		userRepository:      userRepository,
+		proposalRepository:  proposalRepository,
+		voteService:         voteService,
+		accessGovernanceBot: accessGovernanceBot,
+		logger:              logger,
 	}
 }
 
@@ -61,25 +64,45 @@ func (c *createProposalCommand) CanHandle(command string) bool {
 }
 
 func (c *createProposalCommand) Handle(command string, user *models.User, chatID int64) []tgbotapi.Chattable {
+	var message tgbotapi.Chattable
+
 	if command == createProposalCommandName {
-		return []tgbotapi.Chattable{c.handleCreateProposalCommand(user, chatID)}
+		message = c.handleCreateProposalCommand(user, chatID)
+	} else {
+		switch user.TelegramState.LastCommandState {
+		case waitingForTypeState:
+			message = c.handleWaitingForTypeState(command, user, chatID)
+		case waitingForNicknameState:
+			message = c.handleWaitingForNicknameState(command, user, chatID)
+		case waitingForNameState:
+			message = c.handleWaitingForNameState(command, user, chatID)
+		case waitingForReasonState:
+			message = c.handleWaitingForReasonState(command, user, chatID)
+		case waitingForConfirmState:
+			message = c.handleWaitingForConfirmState(command, user, chatID)
+
+			bot, err := tgbotapi.NewBotAPI(c.accessGovernanceBot.Token)
+			if err != nil {
+				c.logger.Errorf("could not create bot: %v", err)
+				_, _ = bot.Send(tgbot.DefaultErrorMessage(chatID))
+			}
+
+			text := fmt.Sprintf("%s предлагает добавить %s в сообщество", user.TelegramNickname, user.TempProposal.NomineeTelegramNickname)
+			message := tgbotapi.NewMessage(int64(user.TempProposal.Poll.ChatID), text)
+			message.BaseChat.ReplyToMessageID = user.TempProposal.Poll.PollMessageID
+
+			_, err = bot.Send(message)
+			if err != nil {
+				c.logger.Errorf("could not send message: %v", err)
+				_, _ = bot.Send(tgbot.DefaultErrorMessage(chatID))
+			}
+		default:
+			c.logger.Errorf("user has unknown state: %s", user.TelegramState.LastCommandState)
+			message = tgbot.DefaultErrorMessage(chatID)
+		}
 	}
 
-	switch user.TelegramState.LastCommandState {
-	case waitingForTypeState:
-		return []tgbotapi.Chattable{c.handleWaitingForTypeState(command, user, chatID)}
-	case waitingForNicknameState:
-		return []tgbotapi.Chattable{c.handleWaitingForNicknameState(command, user, chatID)}
-	case waitingForNameState:
-		return []tgbotapi.Chattable{c.handleWaitingForNameState(command, user, chatID)}
-	case waitingForReasonState:
-		return []tgbotapi.Chattable{c.handleWaitingForReasonState(command, user, chatID)}
-	case waitingForConfirmState:
-		return []tgbotapi.Chattable{c.handleWaitingForConfirmState(command, user, chatID)}
-	default:
-		c.logger.Errorf("user has unknown state: %s", user.TelegramState.LastCommandState)
-		return []tgbotapi.Chattable{tgbot.DefaultErrorMessage(chatID)}
-	}
+	return []tgbotapi.Chattable{message}
 }
 
 func (c *createProposalCommand) handleCreateProposalCommand(user *models.User, chatID int64) tgbotapi.Chattable {

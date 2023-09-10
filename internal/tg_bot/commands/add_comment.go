@@ -22,20 +22,20 @@ const (
 type addCommentCommand struct {
 	userRepository     repositories.UserRepository
 	proposalRepository repositories.ProposalRepository
-	config             configs.VoteBot
+	voteBotConfig      configs.VoteBot
 	logger             *zap.SugaredLogger
 }
 
 func NewAddCommentCommand(
 	userRepository repositories.UserRepository,
 	proposalRepository repositories.ProposalRepository,
-	config configs.VoteBot,
+	voteBotConfig configs.VoteBot,
 	logger *zap.SugaredLogger,
 ) Command {
 	return &addCommentCommand{
 		userRepository:     userRepository,
 		proposalRepository: proposalRepository,
-		config:             config,
+		voteBotConfig:      voteBotConfig,
 		logger:             logger,
 	}
 }
@@ -83,7 +83,7 @@ func (c *addCommentCommand) handleAddCommentCommand(command string, user *models
 }
 
 func (c *addCommentCommand) handleWaitingForCommentState(comment string, user *models.User, chatID int64) tgbotapi.Chattable {
-	bot, err := tgbotapi.NewBotAPI(c.config.Token)
+	bot, err := tgbotapi.NewBotAPI(c.voteBotConfig.Token)
 	if err != nil {
 		c.logger.Errorf("could not create bot: %v", err)
 		return tgbot.DefaultErrorMessage(chatID)
