@@ -33,29 +33,29 @@ var (
 )
 
 type createProposalCommand struct {
-	appConfig           configs.App
-	userRepository      repositories.UserRepository
-	proposalRepository  repositories.ProposalRepository
-	voteService         services.VoteService
-	accessGovernanceBot configs.AccessGovernanceBot
-	logger              *zap.SugaredLogger
+	config             configs.AccessGovernanceBotConfig
+	userRepository     repositories.UserRepository
+	proposalRepository repositories.ProposalRepository
+	voteService        services.VoteService
+
+	logger *zap.SugaredLogger
 }
 
 func NewCreateProposalCommand(
-	appConfig configs.App,
+	config configs.AccessGovernanceBotConfig,
 	userRepository repositories.UserRepository,
 	proposalRepository repositories.ProposalRepository,
 	voteService services.VoteService,
-	accessGovernanceBot configs.AccessGovernanceBot,
+
 	logger *zap.SugaredLogger,
 ) Command {
 	return &createProposalCommand{
-		appConfig:           appConfig,
-		userRepository:      userRepository,
-		proposalRepository:  proposalRepository,
-		voteService:         voteService,
-		accessGovernanceBot: accessGovernanceBot,
-		logger:              logger,
+		config:             config,
+		userRepository:     userRepository,
+		proposalRepository: proposalRepository,
+		voteService:        voteService,
+
+		logger: logger,
 	}
 }
 
@@ -81,14 +81,14 @@ func (c *createProposalCommand) Handle(command string, user *models.User, chatID
 		case waitingForConfirmState:
 			message = c.handleWaitingForConfirmState(command, user, chatID)
 
-			bot, err := tgbotapi.NewBotAPI(c.accessGovernanceBot.Token)
+			bot, err := tgbotapi.NewBotAPI(c.config.AccessGovernanceBot.Token)
 			if err != nil {
 				c.logger.Errorf("could not create bot: %v", err)
 				_, _ = bot.Send(tgbot.DefaultErrorMessage(chatID))
 			}
 
 			text := fmt.Sprintf("%s предлагает добавить %s в сообщество", user.TelegramNickname, user.TempProposal.NomineeTelegramNickname)
-			message := tgbotapi.NewMessage(int64(user.TempProposal.Poll.ChatID), text)
+			message := tgbotapi.NewMessage(c.config.App.MembersChannelID, text)
 			message.BaseChat.ReplyToMessageID = user.TempProposal.Poll.PollMessageID
 
 			_, err = bot.Send(message)

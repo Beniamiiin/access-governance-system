@@ -37,5 +37,6 @@ jobs:
             DB_URL=${{ secrets.DB_URL }}
             TELEGRAM_ACCESS_GOVERNANCE_BOT_TOKEN=${{ secrets.TELEGRAM_ACCESS_GOVERNANCE_BOT_TOKEN }}
             TELEGRAM_VOTE_BOT_TOKEN=${{ secrets.TELEGRAM_VOTE_BOT_TOKEN }}
+            MEMBERS_CHANNEL_ID=${{ vars.MEMBERS_CHANNEL_ID }}
           push: true
           tags: ghcr.io/beniamiiin/access-governance-system:latest

@@ -52,7 +52,7 @@ func main() {
 				commands.NewStartCommand(config.App, userRepository, logger),
 				commands.NewCancelProposalCommand(config.App, userRepository, logger),
 				commands.NewApprovedProposalsCommand(proposalRepository, logger),
-				commands.NewCreateProposalCommand(config.App, userRepository, proposalRepository, voteService, config.AccessGovernanceBot, logger),
+				commands.NewCreateProposalCommand(config, userRepository, proposalRepository, voteService, logger),
 				commands.NewPendingProposalsCommand(proposalRepository, logger),
 				commands.NewAddCommentCommand(userRepository, proposalRepository, config.VoteBot, logger),
 			},

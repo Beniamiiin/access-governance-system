@@ -6,6 +6,7 @@ type App struct {
 	VotingDurationDays     int      `env:"VOTING_DURATION_DAYS" envDefault:"7"`
 	RenominationPeriodDays int      `env:"RENOMINATION_PERIOD_DAYS" envDefault:"3"`
 	InitialSeeders         []string `env:"INITIAL_SEEDERS" envSeparator:","`
+	MembersChannelID       int64    `env:"MEMBERS_CHANNEL_ID,notEmpty"`
 }
 
 func (c App) IsDevEnvironment() bool {
