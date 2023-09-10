@@ -136,7 +136,8 @@ func (h *accessGovernanceBotCommandHandler) createUserIfNeeded(telegramUser *tgb
 func (h *accessGovernanceBotCommandHandler) tryToHandleCommand(command string, commands []commands.Command, user *models.User, chatID int64) []tgbotapi.Chattable {
 	for _, handler := range commands {
 		if handler.CanHandle(command) {
-			user.TelegramState.LastCommand = command
+			user.TempProposal = models.Proposal{}
+			user.TelegramState = models.TelegramState{LastCommand: command}
 
 			user, err := h.userRepository.Update(user)
 			if err != nil {
