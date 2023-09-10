@@ -182,7 +182,7 @@ func (c *createProposalCommand) handleWaitingForNicknameState(proposalNomineeNic
 			)
 			return tgbotapi.NewMessage(chatID, "Этот участник уже состоит в сообществе.")
 		case models.ProposalStatusRejected:
-			monthsAgo := time.Now().AddDate(0, 0, -c.appConfig.RenominationPeriodDays)
+			monthsAgo := time.Now().AddDate(0, 0, -c.config.App.RenominationPeriodDays)
 
 			if !lastProposal.CreatedAt.Before(monthsAgo) {
 				c.logger.Warnf(
@@ -267,7 +267,7 @@ func (c *createProposalCommand) handleWaitingForConfirmState(confirmationState s
 	}
 
 	createdAt := time.Now()
-	finishedAt := createdAt.AddDate(0, 0, c.appConfig.VotingDurationDays)
+	finishedAt := createdAt.AddDate(0, 0, c.config.App.VotingDurationDays)
 
 	title := user.TempProposal.NomineeName
 	description := fmt.Sprintf("@%s предлагает добавить @%s в сообщество\n\nКомментарий: %s", user.TelegramNickname, user.TempProposal.NomineeTelegramNickname, user.TempProposal.Comment)
