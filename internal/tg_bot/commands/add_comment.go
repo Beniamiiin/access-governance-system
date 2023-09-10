@@ -91,7 +91,7 @@ func (c *addCommentCommand) handleWaitingForCommentState(comment string, user *m
 
 	text := fmt.Sprintf("%s: %s", user.TelegramNickname, comment)
 	message := tgbotapi.NewMessage(int64(user.TempProposal.Poll.ChatID), text)
-	message.BaseChat.ReplyToMessageID = user.TempProposal.Poll.DiscussionMessageID
+	message.BaseChat.ReplyToMessageID = user.TempProposal.Poll.PollMessageID
 
 	_, err = bot.Send(message)
 	if err != nil {
