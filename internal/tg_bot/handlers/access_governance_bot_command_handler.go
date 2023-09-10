@@ -59,7 +59,7 @@ func (h *accessGovernanceBotCommandHandler) Handle(update tgbotapi.Update) []tgb
 		telegramUser = callbackQuery.From
 	}
 
-	user, errMessage := h.createUserIfNeeded(telegramUser.ID, telegramUser.UserName, chatID)
+	user, errMessage := h.createUserIfNeeded(telegramUser, chatID)
 	if errMessage != nil {
 		return []tgbotapi.Chattable{errMessage}
 	}
@@ -84,8 +84,8 @@ func (h *accessGovernanceBotCommandHandler) Handle(update tgbotapi.Update) []tgb
 	return []tgbotapi.Chattable{}
 }
 
-func (h *accessGovernanceBotCommandHandler) createUserIfNeeded(userID int64, userName string, chatID int64) (*models.User, tgbotapi.Chattable) {
-	user, err := h.userRepository.GetOneByTelegramID(userID)
+func (h *accessGovernanceBotCommandHandler) createUserIfNeeded(telegramUser *tgbotapi.User, chatID int64) (*models.User, tgbotapi.Chattable) {
+	user, err := h.userRepository.GetOneByTelegramID(telegramUser.ID)
 	if err != nil {
 		h.logger.Errorw("failed to get user", "error", err)
 	}
@@ -94,10 +94,23 @@ func (h *accessGovernanceBotCommandHandler) createUserIfNeeded(userID int64, use
 		isItSeeder := false
 
 		for _, seederName := range h.appConfig.InitialSeeders {
-			if userName == seederName {
+			if telegramUser.UserName == seederName {
 				user = &models.User{
-					TelegramID:       userID,
-					TelegramNickname: userName,
+					Name: func() string {
+						var parts []string
+
+						if telegramUser.FirstName != "" {
+							parts = append(parts, telegramUser.FirstName)
+						}
+
+						if telegramUser.LastName != "" {
+							parts = append(parts, telegramUser.LastName)
+						}
+
+						return strings.Join(parts, " ")
+					}(),
+					TelegramID:       telegramUser.ID,
+					TelegramNickname: telegramUser.UserName,
 					Role:             models.UserRoleSeeder,
 				}
 
