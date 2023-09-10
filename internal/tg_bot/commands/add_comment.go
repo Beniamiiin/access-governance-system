@@ -5,6 +5,7 @@ import (
 	"access_governance_system/internal/db/models"
 	"access_governance_system/internal/db/repositories"
 	tgbot "access_governance_system/internal/tg_bot/extension"
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -88,7 +89,8 @@ func (c *addCommentCommand) handleWaitingForCommentState(comment string, user *m
 		return tgbot.DefaultErrorMessage(chatID)
 	}
 
-	message := tgbotapi.NewMessage(int64(user.TempProposal.Poll.ChatID), comment)
+	text := fmt.Sprintf("%s: %s", user.TelegramNickname, comment)
+	message := tgbotapi.NewMessage(int64(user.TempProposal.Poll.ChatID), text)
 	message.BaseChat.ReplyToMessageID = user.TempProposal.Poll.DiscussionMessageID
 
 	_, err = bot.Send(message)
