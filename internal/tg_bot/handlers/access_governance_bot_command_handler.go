@@ -65,14 +65,18 @@ func (h *accessGovernanceBotCommandHandler) Handle(update tgbotapi.Update) []tgb
 	}
 
 	if message != nil {
+		h.logger.Infow("received message", "message", message)
 		if message.IsCommand() {
+			h.logger.Infow("received command", "command", message.Command())
 			return h.tryToHandleCommand(message.Command(), h.commands, user, chatID)
 		} else if user.TelegramState.LastCommand != "" {
+			h.logger.Infow("received subcommand", "subcommand", message.Text)
 			return h.tryToHandleSubCommand(user.TelegramState.LastCommand, message.Text, h.commands, user, chatID)
 		}
 	}
 
 	if callbackQuery != nil {
+		h.logger.Infow("received callback query", "callback_query", callbackQuery)
 		return h.tryToHandleQueryCallback(callbackQuery.Data, h.commands, user, chatID)
 	}
 
