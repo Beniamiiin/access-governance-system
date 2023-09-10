@@ -86,7 +86,7 @@ func (c *createProposalCommand) Handle(command string, user *models.User, chatID
 				c.logger.Errorf("could not create bot: %v", err)
 			}
 
-			text := fmt.Sprintf("%s предлагает добавить %s в сообщество", user.TelegramNickname, user.TempProposal.NomineeTelegramNickname)
+			text := fmt.Sprintf("@%s предлагает добавить @%s в сообщество", user.TelegramNickname, user.TempProposal.NomineeTelegramNickname)
 			message := tgbotapi.NewMessage(c.config.App.MembersChannelID, text)
 
 			_, err = bot.Send(message)
