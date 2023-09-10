@@ -84,7 +84,6 @@ func (c *createProposalCommand) Handle(command string, user *models.User, chatID
 			bot, err := tgbotapi.NewBotAPI(c.config.AccessGovernanceBot.Token)
 			if err != nil {
 				c.logger.Errorf("could not create bot: %v", err)
-				_, _ = bot.Send(tgbot.DefaultErrorMessage(chatID))
 			}
 
 			text := fmt.Sprintf("%s предлагает добавить %s в сообщество", user.TelegramNickname, user.TempProposal.NomineeTelegramNickname)
@@ -93,7 +92,6 @@ func (c *createProposalCommand) Handle(command string, user *models.User, chatID
 			_, err = bot.Send(message)
 			if err != nil {
 				c.logger.Errorf("could not send message: %v", err)
-				_, _ = bot.Send(tgbot.DefaultErrorMessage(chatID))
 			}
 
 			user.TempProposal = models.Proposal{}
