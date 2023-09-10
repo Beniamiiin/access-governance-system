@@ -238,7 +238,7 @@ func (c *createProposalCommand) handleWaitingForReasonState(proposalDescription 
 func (c *createProposalCommand) handleWaitingForConfirmState(confirmationState string, user *models.User, chatID int64) tgbotapi.Chattable {
 	if confirmationState == confirmNo {
 		user.TempProposal = models.Proposal{}
-		user.TelegramState = models.TelegramState{}
+		user.TelegramState = models.TelegramState{LastCommand: createProposalCommandName}
 		_ = c.updateUser(user)
 		return c.handleCreateProposalCommand(user, chatID)
 	}
