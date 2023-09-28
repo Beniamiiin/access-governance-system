@@ -1,15 +1,17 @@
 # https://taskfile.dev
 
-version: '3'
+version: "3"
 
 tasks:
   up:
     desc: Start system
-    deps: [access-governance-bot-up]
+    deps:
+      - access-governance-bot-up
 
   down:
     desc: Stop system
-    deps: [access-governance-bot-down]
+    deps:
+      - access-governance-bot-down
 
   # Access Governance Bot
 
@@ -27,6 +29,7 @@ tasks:
         up
         --detach
         --build
+        access-governance-bot
 
   access-governance-bot-down:
     desc: Stop access governance bot
@@ -36,3 +39,32 @@ tasks:
         --file ./deployments/docker-compose.yml
         --project-name access-governance-bot
         down
+        access-governance-bot
+
+  # Proposal State Service
+
+  proposal-state-service-up:
+    desc: Start proposal state service
+    cmds:
+      - |
+        if ! docker plugin inspect loki >/dev/null 2>&1; then
+          docker plugin install grafana/loki-docker-driver:latest --alias loki --grant-all-permissions
+        fi
+      - docker-compose
+        --env-file .env
+        --file ./deployments/docker-compose.yml
+        --project-name proposal-state-service
+        up
+        --detach
+        --build
+        proposal-state-service
+
+  proposal-state-service-down:
+    desc: Stop proposal state service
+    cmds:
+      - docker-compose
+        --env-file .env
+        --file ./deployments/docker-compose.yml
+        --project-name proposal-state-service
+        down
+        proposal-state-service

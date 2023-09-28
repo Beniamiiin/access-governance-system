@@ -14,9 +14,10 @@ type userRepository struct {
 type UserRepository interface {
 	Create(request *models.User) (*models.User, error)
 	Update(request *models.User) (*models.User, error)
+	GetOneByID(id int) (*models.User, error)
 	GetOneByTelegramID(telegramID int64) (*models.User, error)
 	GetOneByTelegramNickname(telegramNickname string) (*models.User, error)
-	GetMany() ([]*models.User, error)
+	GetManyByRole(role models.UserRole) ([]*models.User, error)
 }
 
 func NewUserRepository(db *pg.DB) UserRepository {
@@ -65,6 +66,20 @@ func (r *userRepository) Update(request *models.User) (*models.User, error) {
 	return user, err
 }
 
+func (r *userRepository) GetOneByID(id int) (*models.User, error) {
+	user := &models.User{}
+
+	err := r.db.Model(user).
+		Relation("Proposals").
+		Where("id = ?", id).
+		Select()
+	if errors.Is(err, pg.ErrNoRows) {
+		return nil, nil
+	}
+
+	return user, err
+}
+
 func (r *userRepository) GetOneByTelegramID(telegramID int64) (*models.User, error) {
 	user := &models.User{}
 
@@ -93,11 +108,12 @@ func (r *userRepository) GetOneByTelegramNickname(telegramNickname string) (*mod
 	return user, err
 }
 
-func (r *userRepository) GetMany() ([]*models.User, error) {
+func (r *userRepository) GetManyByRole(role models.UserRole) ([]*models.User, error) {
 	users := make([]*models.User, 0)
 
 	err := r.db.Model(&users).
 		Relation("Proposals").
+		Where("role = ?", role.String()).
 		Select()
 
 	return users, err

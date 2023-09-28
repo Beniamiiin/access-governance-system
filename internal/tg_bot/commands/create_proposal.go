@@ -87,7 +87,7 @@ func (c *createProposalCommand) Handle(command string, user *models.User, chatID
 			}
 
 			text := fmt.Sprintf("@%s предлагает добавить @%s в сообщество", user.TelegramNickname, user.TempProposal.NomineeTelegramNickname)
-			message := tgbotapi.NewMessage(c.config.App.MembersChannelID, text)
+			message := tgbotapi.NewMessage(c.config.App.MembersChatID, text)
 
 			_, err = bot.Send(message)
 			if err != nil {

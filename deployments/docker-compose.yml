@@ -2,8 +2,19 @@ services:
   access-governance-bot:
     build:
       context: ..
-      dockerfile: ./deployments/Dockerfile
+      dockerfile: ./deployments/access_governance_bot/Dockerfile
     restart: on-failure:5
+    env_file:
+      - ../.env
+    ports:
+      - 8080:8080
+    depends_on:
+      - database
+
+  proposal-state-service:
+    build:
+      context: ..
+      dockerfile: ./deployments/proposal_state_service/Dockerfile
     env_file:
       - ../.env
     ports:

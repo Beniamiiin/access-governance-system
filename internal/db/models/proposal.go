@@ -19,6 +19,7 @@ const (
 	ProposalStatusCreated  ProposalStatus = "created"
 	ProposalStatusApproved ProposalStatus = "approved"
 	ProposalStatusRejected ProposalStatus = "rejected"
+	ProposalStatusNoQuorum ProposalStatus = "no_quorum"
 
 	NomineeRoleMember NomineeRole = "member"
 	NomineeRoleSeeder NomineeRole = "seeder"

@@ -1,6 +1,6 @@
 # https://taskfile.dev
 
-version: '3'
+version: "3"
 
 vars:
   NETWORK_NAME: access-governance-system-network
@@ -46,7 +46,7 @@ tasks:
     deps:
       - install-docker-plugins
     vars:
-      URL: ghcr.io/beniamiiin/access-governance-system:latest
+      URL: ghcr.io/beniamiiin/access-governance-system:agb
       SERVICE_NAME: access-governance-bot
     cmds:
       - docker pull {{.URL}}
@@ -67,7 +67,7 @@ tasks:
   vote-bot-up:
     desc: Start vote bot
     vars:
-      URL: ghcr.io/beniamiiin/ultimate-poll-bot:latest
+      URL: ghcr.io/beniamiiin/ultimate-poll-bot:bot
       SERVICE_NAME: vot-bot
     cmds:
       - docker pull {{.URL}}
@@ -100,6 +100,29 @@ tasks:
     desc: Stop vot bot
     vars:
       SERVICE_NAME: vot-bot-api
+    cmds:
+      - docker rm -f {{.SERVICE_NAME}}
+      - docker rmi -f {{.SERVICE_NAME}}
+
+  # Proposal State Service
+
+  proposal-state-service-up:
+    desc: Start proposal state service
+    deps:
+      - install-docker-plugins
+    vars:
+      URL: ghcr.io/beniamiiin/access-governance-system:pss
+      SERVICE_NAME: proposal-state-service
+    cmds:
+      - docker pull {{.URL}}
+      - docker image tag {{.URL}} {{.SERVICE_NAME}}
+      - docker rmi {{.URL}}
+      - docker run --detach --interactive --tty --net {{.NETWORK_NAME}} --name {{.SERVICE_NAME}} {{.SERVICE_NAME}}
+
+  proposal-state-service-down:
+    desc: Stop proposal state service
+    vars:
+      SERVICE_NAME: proposal-state-service
     cmds:
       - docker rm -f {{.SERVICE_NAME}}
       - docker rmi -f {{.SERVICE_NAME}}

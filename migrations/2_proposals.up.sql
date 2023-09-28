@@ -1,5 +1,5 @@
 CREATE TYPE NomineeRole AS ENUM ('member', 'seeder');
-CREATE TYPE ProposalStatus AS ENUM ('created', 'approved', 'rejected');
+CREATE TYPE ProposalStatus AS ENUM ('created', 'approved', 'rejected', 'no_quorum');
 
 CREATE TABLE IF NOT EXISTS proposals (
     id SERIAL PRIMARY KEY,
