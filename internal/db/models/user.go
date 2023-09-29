@@ -34,6 +34,7 @@ type User struct {
 	DiscordID        int           `json:"discord_id"`
 	Role             UserRole      `json:"role" pg:"type:UserRole,notnull,default:'guest'"`
 	Proposals        []Proposal    `json:"proposals" pg:"rel:has-many,fk:user_id"`
+	BackersID        []int64       `json:"backers_id" pg:",array"`
 	NominatorID      int           `json:"nominator_id"`
 	TempProposal     Proposal      `json:"temp_proposal"`
 	TelegramState    TelegramState `json:"telegram_state"`

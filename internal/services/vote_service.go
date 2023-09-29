@@ -18,8 +18,8 @@ type poll struct {
 }
 
 type Vote struct {
-	Username string `json:"username"`
-	Option   string `json:"option"`
+	UserID int64  `json:"user_id"`
+	Option string `json:"option"`
 }
 
 type service struct {

@@ -53,7 +53,7 @@ func main() {
 	if len(proposalsNeedToBeUpdated) == 0 {
 		logger.Info("no proposals to update")
 	} else {
-		updatedProposals := updateProposals(proposalsNeedToBeUpdated, proposalRepository, logger)
+		updatedProposals := updateProposals(proposalsNeedToBeUpdated, userRepository, proposalRepository, voteService, logger)
 
 		for _, proposal := range updatedProposals {
 			sendNotifications(proposal, userRepository, config, logger)
@@ -83,6 +83,10 @@ func getProposalsNeedToBeUpdated(
 		votes, err := voteService.GetVotes(proposal.Poll.ID)
 		if err != nil {
 			logger.Errorw("failed to get votes", "error", err)
+			continue
+		}
+
+		if len(votes) == 0 {
 			continue
 		}
 
@@ -120,12 +124,12 @@ func getVotedUsers(votes []services.Vote, userRepository repositories.UserReposi
 	votedUsers := []*models.User{}
 
 	for _, vote := range votes {
-		user, err := userRepository.GetOneByTelegramNickname(vote.Username)
+		user, err := userRepository.GetOneByTelegramID(vote.UserID)
 		if err != nil {
 			logger.Errorw("failed to get user", "error", err)
 			continue
 		} else if user == nil {
-			logger.Errorw("user not found", "username", vote.Username)
+			logger.Errorw("user not found", "userID", vote.UserID)
 			continue
 		}
 
@@ -169,7 +173,9 @@ func updateProposalStatus(
 
 func updateProposals(
 	proposals []*models.Proposal,
+	userRepository repositories.UserRepository,
 	proposalRepository repositories.ProposalRepository,
+	voteService services.VoteService,
 	logger *zap.SugaredLogger,
 ) []*models.Proposal {
 	var updatedProposals []*models.Proposal
@@ -179,9 +185,36 @@ func updateProposals(
 
 		if err != nil {
 			logger.Errorw("failed to update proposal", "error", err)
-		} else {
-			updatedProposals = append(updatedProposals, proposal)
+			continue
 		}
+
+		votes, err := voteService.GetVotes(proposal.Poll.ID)
+		if err != nil {
+			logger.Errorw("failed to get votes", "error", err)
+			continue
+		}
+
+		backersIDs := make([]int64, 0)
+		for _, vote := range votes {
+			if vote.Option == "yes" {
+				backersIDs = append(backersIDs, vote.UserID)
+			}
+		}
+
+		user := &models.User{
+			Name:             proposal.NomineeName,
+			TelegramNickname: proposal.NomineeTelegramNickname,
+			Role:             models.UserRoleGuest,
+			BackersID:        backersIDs,
+		}
+
+		_, err = userRepository.Create(user)
+		if err != nil {
+			logger.Errorw("failed to create user", "error", err)
+			continue
+		}
+
+		updatedProposals = append(updatedProposals, proposal)
 	}
 
 	return updatedProposals
