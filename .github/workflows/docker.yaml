@@ -56,4 +56,4 @@ jobs:
             TELEGRAM_ACCESS_GOVERNANCE_BOT_TOKEN=${{ secrets.TELEGRAM_ACCESS_GOVERNANCE_BOT_TOKEN }}
             MEMBERS_CHAT_ID=${{ vars.MEMBERS_CHAT_ID }}
           push: true
-          tags: ghcr.io/beniamiiin/access-governance-system:agb
+          tags: ghcr.io/beniamiiin/access-governance-system:pss
