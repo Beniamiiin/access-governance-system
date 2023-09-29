@@ -11,11 +11,14 @@ import (
 	"math"
 	"time"
 
+	"github.com/go-co-op/gocron"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"go.uber.org/zap"
 )
 
 func main() {
+	s := gocron.NewScheduler(time.UTC)
+
 	config, err := configs.LoadProposalStateServiceConfig()
 	logger := di.NewLogger(config.Logger.AppName, config.App.Environment, config.Logger.URL)
 
@@ -31,36 +34,40 @@ func main() {
 	}
 	logger.Info("db started")
 
-	logger.Info("initializing repositories and services")
-	userRepository := repositories.NewUserRepository(database)
-	proposalRepository := repositories.NewProposalRepository(database)
-	voteService := services.NewVoteService(config.VoteAPI.URL)
+	s.Cron("10 12 * * *").Do(func() {
+		logger.Info("initializing repositories and services")
+		userRepository := repositories.NewUserRepository(database)
+		proposalRepository := repositories.NewProposalRepository(database)
+		voteService := services.NewVoteService(config.VoteAPI.URL)
 
-	logger.Info("getting seeders")
-	seeders, err := userRepository.GetManyByRole(models.UserRoleSeeder)
-	if err != nil {
-		logger.Fatalw("failed to get seeders", "error", err)
-	}
-
-	logger.Info("getting proposals")
-	proposals, err := proposalRepository.GetManyByStatus(models.ProposalStatusCreated)
-	if err != nil {
-		logger.Fatalw("failed to get proposals", "error", err)
-	}
-
-	proposalsNeedToBeUpdated := getProposalsNeedToBeUpdated(seeders, proposals, userRepository, voteService, config, logger)
-
-	if len(proposalsNeedToBeUpdated) == 0 {
-		logger.Info("no proposals to update")
-	} else {
-		updatedProposals := updateProposals(proposalsNeedToBeUpdated, userRepository, proposalRepository, voteService, logger)
-
-		for _, proposal := range updatedProposals {
-			sendNotifications(proposal, userRepository, config, logger)
+		logger.Info("getting seeders")
+		seeders, err := userRepository.GetManyByRole(models.UserRoleSeeder)
+		if err != nil {
+			logger.Fatalw("failed to get seeders", "error", err)
 		}
 
-		logger.Info("proposals updated")
-	}
+		logger.Info("getting proposals")
+		proposals, err := proposalRepository.GetManyByStatus(models.ProposalStatusCreated)
+		if err != nil {
+			logger.Fatalw("failed to get proposals", "error", err)
+		}
+
+		proposalsNeedToBeUpdated := getProposalsNeedToBeUpdated(seeders, proposals, userRepository, voteService, config, logger)
+
+		if len(proposalsNeedToBeUpdated) == 0 {
+			logger.Info("no proposals to update")
+		} else {
+			updatedProposals := updateProposals(proposalsNeedToBeUpdated, userRepository, proposalRepository, voteService, logger)
+
+			for _, proposal := range updatedProposals {
+				sendNotifications(proposal, userRepository, config, logger)
+			}
+
+			logger.Info("proposals updated")
+		}
+	})
+
+	s.StartBlocking()
 }
 
 func getProposalsNeedToBeUpdated(

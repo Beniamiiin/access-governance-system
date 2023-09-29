@@ -22,7 +22,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push
+      - name: Build and push AccessGovernanceBot
         uses: docker/build-push-action@v4
         with:
           context: .
@@ -37,6 +37,23 @@ jobs:
             DB_URL=${{ secrets.DB_URL }}
             TELEGRAM_ACCESS_GOVERNANCE_BOT_TOKEN=${{ secrets.TELEGRAM_ACCESS_GOVERNANCE_BOT_TOKEN }}
             TELEGRAM_VOTE_BOT_TOKEN=${{ secrets.TELEGRAM_VOTE_BOT_TOKEN }}
+            MEMBERS_CHAT_ID=${{ vars.MEMBERS_CHAT_ID }}
+          push: true
+          tags: ghcr.io/beniamiiin/access-governance-system:agb
+
+      - name: Build and push ProposalStateService
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./deployments/proposal_state_service/Dockerfile
+          build-args: |
+            ENVIRONMENT=${{ vars.ENVIRONMENT }}
+            LOKI_URL=${{ secrets.LOKI_URL }}
+            DB_URL=${{ secrets.DB_URL }}
+            QUORUM=${{ vars.QUORUM }}
+            MIN_YES_PERCENTAGE=${{ vars.MIN_YES_PERCENTAGE }}
+            YES_VOTES_TO_OVERCOME_NO=${{ vars.YES_VOTES_TO_OVERCOME_NO }}
+            TELEGRAM_ACCESS_GOVERNANCE_BOT_TOKEN=${{ secrets.TELEGRAM_ACCESS_GOVERNANCE_BOT_TOKEN }}
             MEMBERS_CHAT_ID=${{ vars.MEMBERS_CHAT_ID }}
           push: true
           tags: ghcr.io/beniamiiin/access-governance-system:agb
