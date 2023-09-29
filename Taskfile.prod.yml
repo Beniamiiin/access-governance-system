@@ -14,6 +14,7 @@ tasks:
       - access-governance-bot-up
       - vote-bot-up
       - vote-bot-api-up
+      - proposal-state-service-up
 
   down:
     desc: Stop system
@@ -21,6 +22,7 @@ tasks:
       - access-governance-bot-down
       - vote-bot-down
       - vote-bot-api-down
+      - proposal-state-service-down
     cmds:
       - docker network rm {{.NETWORK_NAME}}
 
