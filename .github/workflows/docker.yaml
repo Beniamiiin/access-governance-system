@@ -57,3 +57,19 @@ jobs:
             MEMBERS_CHAT_ID=${{ vars.MEMBERS_CHAT_ID }}
           push: true
           tags: ghcr.io/beniamiiin/access-governance-system:pss
+
+      - name: Build and push AuthorizationBot
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./deployments/authorization_bot/Dockerfile
+          build-args: |
+            ENVIRONMENT=${{ vars.ENVIRONMENT }}
+            COMMUNITY_NAME=${{ vars.COMMUNITY_NAME }}
+            LOKI_URL=${{ secrets.LOKI_URL }}
+            DB_URL=${{ secrets.DB_URL }}
+            TELEGRAM_AUTHORIZATION_BOT_TOKEN=${{ secrets.TELEGRAM_AUTHORIZATION_BOT_TOKEN }}
+            DISCORD_AUTHORIZATION_BOT_TOKEN=${{ secrets.DISCORD_AUTHORIZATION_BOT_TOKEN }}
+            DISCORD_AUTHORIZATION_CHANNEL_ID=${{ secrets.DISCORD_AUTHORIZATION_CHANNEL_ID }}
+          push: true
+          tags: ghcr.io/beniamiiin/access-governance-system:ab
