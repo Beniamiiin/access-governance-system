@@ -14,6 +14,7 @@ tasks:
       - access-governance-bot-up
       - vote-bot-up
       - vote-bot-api-up
+      - authorization-bot-up
       - proposal-state-service-up
 
   down:
@@ -22,6 +23,7 @@ tasks:
       - access-governance-bot-down
       - vote-bot-down
       - vote-bot-api-down
+      - authorization-bot-down
       - proposal-state-service-down
     cmds:
       - docker network rm {{.NETWORK_NAME}}
@@ -125,6 +127,29 @@ tasks:
     desc: Stop proposal state service
     vars:
       SERVICE_NAME: proposal-state-service
+    cmds:
+      - docker rm -f {{.SERVICE_NAME}}
+      - docker rmi -f {{.SERVICE_NAME}}
+
+  # Authorization Bot
+
+  authorization-bot-up:
+    desc: Start authorization bot
+    deps:
+      - install-docker-plugins
+    vars:
+      URL: ghcr.io/beniamiiin/access-governance-system:ab
+      SERVICE_NAME: authorization-bot
+    cmds:
+      - docker pull {{.URL}}
+      - docker image tag {{.URL}} {{.SERVICE_NAME}}
+      - docker rmi {{.URL}}
+      - docker run --detach --interactive --tty --net {{.NETWORK_NAME}} --name {{.SERVICE_NAME}} {{.SERVICE_NAME}}
+
+  authorization-bot-down:
+    desc: Stop authorization bot
+    vars:
+      SERVICE_NAME: authorization-bot
     cmds:
       - docker rm -f {{.SERVICE_NAME}}
       - docker rmi -f {{.SERVICE_NAME}}

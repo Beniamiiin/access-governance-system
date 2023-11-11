@@ -5,11 +5,10 @@ import (
 	"access_governance_system/internal/db"
 	"access_governance_system/internal/db/repositories"
 	"access_governance_system/internal/di"
-	"access_governance_system/internal/services"
 	tgbot "access_governance_system/internal/tg_bot"
 	"access_governance_system/internal/tg_bot/commands"
-	agbcommands "access_governance_system/internal/tg_bot/commands/access_governance_bot"
-	agbhandlers "access_governance_system/internal/tg_bot/handlers/access_governance_bot"
+	abcommands "access_governance_system/internal/tg_bot/commands/authorization_bot"
+	abhandlers "access_governance_system/internal/tg_bot/handlers/authorization_bot"
 	"context"
 	"errors"
 	"net/http"
@@ -22,7 +21,7 @@ import (
 )
 
 func main() {
-	config, err := configs.LoadAccessGovernanceBotConfig()
+	config, err := configs.LoadAuthrozationBotConfig()
 	logger := di.NewLogger(config.Logger.AppName, config.App.Environment, config.Logger.URL)
 
 	if err != nil {
@@ -44,26 +43,19 @@ func main() {
 
 	logger.Info("starting bot")
 	userRepository := repositories.NewUserRepository(database)
-	proposalRepository := repositories.NewProposalRepository(database)
-	voteService := services.NewVoteService(config.VoteAPI.URL)
 
 	tgbot.NewBot(
-		agbhandlers.NewAccessGovernanceBotCommandHandler(config.App, userRepository, logger,
+		abhandlers.NewAuthorizationBotCommandHandler(config.App, userRepository, logger,
 			[]commands.Command{
-				agbcommands.NewStartCommand(config.App, userRepository, logger),
-				agbcommands.NewCancelProposalCommand(config.App, userRepository, logger),
-				agbcommands.NewApprovedProposalsCommand(proposalRepository, logger),
-				agbcommands.NewCreateProposalCommand(config, userRepository, proposalRepository, voteService, logger),
-				agbcommands.NewPendingProposalsCommand(proposalRepository, logger),
-				agbcommands.NewAddCommentCommand(userRepository, proposalRepository, config.VoteBot, logger),
+				abcommands.NewStartCommand(config.DiscordAuthrozationBot, userRepository, logger),
 			},
 		),
-	).Start(config.AccessGovernanceBot.Token, logger)
+	).Start(config.TelegramAuthrozationBot.Token, logger)
 }
 
 func settingUpHealthCheckServer(logger *zap.SugaredLogger) {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/access-governance-bot/healthcheck", healthCheckHandler)
+	mux.HandleFunc("/authorization-bot/healthcheck", healthCheckHandler)
 
 	server := &http.Server{Addr: ":8080", Handler: mux}
 

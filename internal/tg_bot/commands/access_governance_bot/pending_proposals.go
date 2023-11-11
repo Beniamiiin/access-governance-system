@@ -1,9 +1,10 @@
-package commands
+package agbcommands
 
 import (
 	"access_governance_system/internal"
 	"access_governance_system/internal/db/models"
 	"access_governance_system/internal/db/repositories"
+	"access_governance_system/internal/tg_bot/commands"
 	tgbot "access_governance_system/internal/tg_bot/extension"
 	"fmt"
 	"strconv"
@@ -20,7 +21,7 @@ type pendingProposalsCommand struct {
 	logger             *zap.SugaredLogger
 }
 
-func NewPendingProposalsCommand(proposalRepository repositories.ProposalRepository, logger *zap.SugaredLogger) Command {
+func NewPendingProposalsCommand(proposalRepository repositories.ProposalRepository, logger *zap.SugaredLogger) commands.Command {
 	return &pendingProposalsCommand{
 		proposalRepository: proposalRepository,
 		logger:             logger,

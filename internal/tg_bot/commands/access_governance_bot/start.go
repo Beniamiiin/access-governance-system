@@ -1,9 +1,10 @@
-package commands
+package agbcommands
 
 import (
 	"access_governance_system/configs"
 	"access_governance_system/internal/db/models"
 	"access_governance_system/internal/db/repositories"
+	"access_governance_system/internal/tg_bot/commands"
 	"fmt"
 	"strings"
 
@@ -19,7 +20,7 @@ type startCommand struct {
 	logger         *zap.SugaredLogger
 }
 
-func NewStartCommand(appConfig configs.App, userRepository repositories.UserRepository, logger *zap.SugaredLogger) Command {
+func NewStartCommand(appConfig configs.App, userRepository repositories.UserRepository, logger *zap.SugaredLogger) commands.Command {
 	return &startCommand{
 		appConfig:      appConfig,
 		userRepository: userRepository,

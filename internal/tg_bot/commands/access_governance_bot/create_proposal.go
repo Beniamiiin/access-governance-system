@@ -1,10 +1,11 @@
-package commands
+package agbcommands
 
 import (
 	"access_governance_system/configs"
 	"access_governance_system/internal/db/models"
 	"access_governance_system/internal/db/repositories"
 	"access_governance_system/internal/services"
+	"access_governance_system/internal/tg_bot/commands"
 	tgbot "access_governance_system/internal/tg_bot/extension"
 	"fmt"
 	"strings"
@@ -48,7 +49,7 @@ func NewCreateProposalCommand(
 	voteService services.VoteService,
 
 	logger *zap.SugaredLogger,
-) Command {
+) commands.Command {
 	return &createProposalCommand{
 		config:             config,
 		userRepository:     userRepository,
@@ -83,7 +84,7 @@ func (c *createProposalCommand) Handle(command string, user *models.User, chatID
 
 			bot, err := tgbotapi.NewBotAPI(c.config.AccessGovernanceBot.Token)
 			if err != nil {
-				c.logger.Errorf("could not create bot: %v", err)
+				c.logger.Errorw("could not create bot", "error", err)
 			}
 
 			text := fmt.Sprintf("@%s предлагает добавить @%s в сообщество", user.TelegramNickname, user.TempProposal.NomineeTelegramNickname)
@@ -91,14 +92,14 @@ func (c *createProposalCommand) Handle(command string, user *models.User, chatID
 
 			_, err = bot.Send(message)
 			if err != nil {
-				c.logger.Errorf("could not send message: %v", err)
+				c.logger.Errorw("could not send message", "error", err)
 			}
 
 			user.TempProposal = models.Proposal{}
 			user.TelegramState = models.TelegramState{}
 			_ = c.updateUser(user)
 		default:
-			c.logger.Errorf("user has unknown state: %s", user.TelegramState.LastCommandState)
+			c.logger.Errorw("user has unknown state", "error", user.TelegramState.LastCommandState)
 			message = tgbot.DefaultErrorMessage(chatID)
 		}
 	}
@@ -132,7 +133,7 @@ func (c *createProposalCommand) handleCreateProposalCommand(user *models.User, c
 		return message
 	}
 
-	c.logger.Errorf("user has unknown role: %s", user.Role)
+	c.logger.Errorw("user has unknown role", "role", user.Role)
 	return nil
 }
 
@@ -160,7 +161,7 @@ func (c *createProposalCommand) handleWaitingForNicknameState(proposalNomineeNic
 
 	proposals, err := c.proposalRepository.GetManyByNomineeNickname(proposalNomineeNickname)
 	if err != nil {
-		c.logger.Errorf("failed to get proposals by nominee nickname: %s", err)
+		c.logger.Errorw("failed to get proposals by nominee nickname", "error", err)
 		return tgbot.DefaultErrorMessage(chatID)
 	} else if len(proposals) > 0 {
 		lastProposal := proposals[len(proposals)-1]
@@ -199,7 +200,7 @@ func (c *createProposalCommand) handleWaitingForNicknameState(proposalNomineeNic
 
 	foundUser, err := c.userRepository.GetOneByTelegramNickname(proposalNomineeNickname)
 	if err != nil {
-		c.logger.Errorf("failed to get user by nominee nickname: %s", err)
+		c.logger.Errorw("failed to get user by nominee nickname", "error", err)
 		return tgbot.DefaultErrorMessage(chatID)
 	} else if foundUser != nil {
 		c.logger.Warnf(

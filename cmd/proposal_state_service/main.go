@@ -57,7 +57,7 @@ func main() {
 		if len(proposalsNeedToBeUpdated) == 0 {
 			logger.Info("no proposals to update")
 		} else {
-			updatedProposals := updateProposals(proposalsNeedToBeUpdated, userRepository, proposalRepository, voteService, logger)
+			updatedProposals := updateProposals(proposalsNeedToBeUpdated, proposalRepository, voteService, userRepository, logger)
 
 			for _, proposal := range updatedProposals {
 				sendNotifications(proposal, userRepository, config, logger)
@@ -180,9 +180,9 @@ func updateProposalStatus(
 
 func updateProposals(
 	proposals []*models.Proposal,
-	userRepository repositories.UserRepository,
 	proposalRepository repositories.ProposalRepository,
 	voteService services.VoteService,
+	userRepository repositories.UserRepository,
 	logger *zap.SugaredLogger,
 ) []*models.Proposal {
 	var updatedProposals []*models.Proposal

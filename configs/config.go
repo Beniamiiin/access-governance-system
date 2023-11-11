@@ -2,6 +2,7 @@ package configs
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/caarlos0/env/v6"
 )
@@ -10,8 +11,8 @@ type AccessGovernanceBotConfig struct {
 	App                 App
 	DB                  DB
 	Logger              Logger
-	AccessGovernanceBot AccessGovernanceBot
-	VoteBot             VoteBot
+	AccessGovernanceBot Telegram
+	VoteBot             Telegram
 	VoteAPI             VoteAPI
 }
 
@@ -22,6 +23,8 @@ func LoadAccessGovernanceBotConfig() (AccessGovernanceBotConfig, error) {
 		return AccessGovernanceBotConfig{}, fmt.Errorf("failed to parse config: %w", err)
 	}
 
+	config.AccessGovernanceBot.Token = os.Getenv("TELEGRAM_ACCESS_GOVERNANCE_BOT_TOKEN")
+	config.VoteBot.Token = os.Getenv("TELEGRAM_VOTE_BOT_TOKEN")
 	config.Logger.AppName = "access-governance-bot"
 
 	return config, nil
@@ -31,7 +34,7 @@ type ProposalStateServiceConfig struct {
 	App                 App
 	DB                  DB
 	Logger              Logger
-	AccessGovernanceBot AccessGovernanceBot
+	AccessGovernanceBot Telegram
 	VoteAPI             VoteAPI
 
 	Quorum               float64 `env:"QUORUM"`                   // 30% initial parameter for quorum
@@ -46,7 +49,29 @@ func LoadProposalStateServiceConfig() (ProposalStateServiceConfig, error) {
 		return ProposalStateServiceConfig{}, fmt.Errorf("failed to parse config: %w", err)
 	}
 
+	config.AccessGovernanceBot.Token = os.Getenv("TELEGRAM_ACCESS_GOVERNANCE_BOT_TOKEN")
 	config.Logger.AppName = "proposal-state-service"
+
+	return config, nil
+}
+
+type AuthrozationBotConfig struct {
+	App                     App
+	DB                      DB
+	Logger                  Logger
+	DiscordAuthrozationBot  Discord
+	TelegramAuthrozationBot Telegram
+}
+
+func LoadAuthrozationBotConfig() (AuthrozationBotConfig, error) {
+	var config AuthrozationBotConfig
+
+	if err := env.Parse(&config); err != nil {
+		return AuthrozationBotConfig{}, fmt.Errorf("failed to parse config: %w", err)
+	}
+
+	config.TelegramAuthrozationBot.Token = os.Getenv("TELEGRAM_AUTHORIZATION_BOT_TOKEN")
+	config.Logger.AppName = "authorization-bot"
 
 	return config, nil
 }

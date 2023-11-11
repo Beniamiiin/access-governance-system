@@ -1,4 +1,4 @@
-package handlers
+package agbhandlers
 
 import (
 	"access_governance_system/configs"
@@ -6,6 +6,7 @@ import (
 	"access_governance_system/internal/db/repositories"
 	"access_governance_system/internal/tg_bot/commands"
 	tgbot "access_governance_system/internal/tg_bot/extension"
+	"access_governance_system/internal/tg_bot/handlers"
 	"fmt"
 	"strings"
 
@@ -26,7 +27,7 @@ func NewAccessGovernanceBotCommandHandler(
 	userRepository repositories.UserRepository,
 	logger *zap.SugaredLogger,
 	commands []commands.Command,
-) CommandHandler {
+) handlers.CommandHandler {
 	return &accessGovernanceBotCommandHandler{
 		appConfig:      appConfig,
 		userRepository: userRepository,
@@ -80,14 +81,14 @@ func (h *accessGovernanceBotCommandHandler) Handle(update tgbotapi.Update) []tgb
 		return h.tryToHandleQueryCallback(callbackQuery.Data, h.commands, user, chatID)
 	}
 
-	h.logger.Error("received unknown message")
+	h.logger.Warn("received unknown message")
 	return []tgbotapi.Chattable{}
 }
 
 func (h *accessGovernanceBotCommandHandler) createUserIfNeeded(telegramUser *tgbotapi.User, chatID int64) (*models.User, tgbotapi.Chattable) {
 	user, err := h.userRepository.GetOneByTelegramID(telegramUser.ID)
 	if err != nil {
-		h.logger.Errorw("failed to get user", "error", err)
+		h.logger.Warnw("failed to get user", "error", err)
 	}
 
 	if user == nil {
@@ -148,7 +149,7 @@ func (h *accessGovernanceBotCommandHandler) tryToHandleCommand(command string, c
 		}
 	}
 
-	h.logger.Errorf("received unknown command: %s", command)
+	h.logger.Warnw("received unknown command", "command", command)
 	return []tgbotapi.Chattable{}
 }
 
@@ -159,7 +160,7 @@ func (h *accessGovernanceBotCommandHandler) tryToHandleSubCommand(command, subCo
 		if handler.CanHandle(command) {
 			responseMessage := handler.Handle(subCommand, user, chatID)
 			if responseMessage == nil {
-				h.logger.Errorf("failed to handle subcommand: %s", subCommand)
+				h.logger.Errorw("failed to handle subcommand", "subCommand", subCommand)
 				break
 			}
 
@@ -193,6 +194,6 @@ func (h *accessGovernanceBotCommandHandler) tryToHandleQueryCallback(query strin
 		}
 	}
 
-	h.logger.Errorf("received unknown command: %s", command)
+	h.logger.Errorw("received unknown command", "command", command)
 	return []tgbotapi.Chattable{}
 }

@@ -8,6 +8,8 @@
    1. Copy `.env.example` to `.env`
    2. Edit `.env` file
    3. Update `TELEGRAM_ACCESS_GOVERNANCE_BOT_TOKEN` variable with your token
+   4. Update `TELEGRAM_VOTE_BOT_TOKEN` variable with your token
+   5. Update `TELEGRAM_AUTHORIZATION_BOT_TOKEN` variable with your token
 5. Run `task up`
 
 ### How to stop

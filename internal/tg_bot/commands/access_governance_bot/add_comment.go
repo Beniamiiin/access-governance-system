@@ -1,9 +1,10 @@
-package commands
+package agbcommands
 
 import (
 	"access_governance_system/configs"
 	"access_governance_system/internal/db/models"
 	"access_governance_system/internal/db/repositories"
+	"access_governance_system/internal/tg_bot/commands"
 	tgbot "access_governance_system/internal/tg_bot/extension"
 	"fmt"
 	"strconv"
@@ -22,16 +23,16 @@ const (
 type addCommentCommand struct {
 	userRepository     repositories.UserRepository
 	proposalRepository repositories.ProposalRepository
-	voteBotConfig      configs.VoteBot
+	voteBotConfig      configs.Telegram
 	logger             *zap.SugaredLogger
 }
 
 func NewAddCommentCommand(
 	userRepository repositories.UserRepository,
 	proposalRepository repositories.ProposalRepository,
-	voteBotConfig configs.VoteBot,
+	voteBotConfig configs.Telegram,
 	logger *zap.SugaredLogger,
-) Command {
+) commands.Command {
 	return &addCommentCommand{
 		userRepository:     userRepository,
 		proposalRepository: proposalRepository,
@@ -51,7 +52,7 @@ func (c *addCommentCommand) Handle(command string, user *models.User, chatID int
 	case waitingForCommentState:
 		return []tgbotapi.Chattable{c.handleWaitingForCommentState(command, user, chatID)}
 	default:
-		c.logger.Errorf("user has unknown state: %s", user.TelegramState.LastCommandState)
+		c.logger.Errorw("user has unknown state", "state", user.TelegramState.LastCommandState)
 		return []tgbotapi.Chattable{tgbot.DefaultErrorMessage(chatID)}
 	}
 }
@@ -59,19 +60,19 @@ func (c *addCommentCommand) Handle(command string, user *models.User, chatID int
 func (c *addCommentCommand) handleAddCommentCommand(command string, user *models.User, chatID int64) tgbotapi.Chattable {
 	parts := strings.Split(command, ":")
 	if len(parts) != 2 {
-		c.logger.Errorf("user has invalid command: %s", command)
+		c.logger.Errorw("user has invalid command", "command", command)
 		return tgbot.DefaultErrorMessage(chatID)
 	}
 
 	proposalID, err := strconv.ParseInt(parts[1], 0, 64)
 	if err != nil {
-		c.logger.Errorf("could not get proposal id: %s", command)
+		c.logger.Errorw("could not get proposal id", "error", err)
 		return tgbot.DefaultErrorMessage(chatID)
 	}
 
 	proposal, err := c.proposalRepository.GetOneByID(proposalID)
 	if err != nil {
-		c.logger.Errorf("could not get proposal: %s", command)
+		c.logger.Errorw("could not get proposal", "error", err)
 		return tgbot.DefaultErrorMessage(chatID)
 	}
 
@@ -85,7 +86,7 @@ func (c *addCommentCommand) handleAddCommentCommand(command string, user *models
 func (c *addCommentCommand) handleWaitingForCommentState(comment string, user *models.User, chatID int64) tgbotapi.Chattable {
 	bot, err := tgbotapi.NewBotAPI(c.voteBotConfig.Token)
 	if err != nil {
-		c.logger.Errorf("could not create bot: %v", err)
+		c.logger.Errorw("could not create bot", "error", err)
 		return tgbot.DefaultErrorMessage(chatID)
 	}
 
@@ -95,7 +96,7 @@ func (c *addCommentCommand) handleWaitingForCommentState(comment string, user *m
 
 	_, err = bot.Send(message)
 	if err != nil {
-		c.logger.Errorf("could not send message: %v", err)
+		c.logger.Errorw("could not send message", "error", err)
 		return tgbot.DefaultErrorMessage(chatID)
 	}
 

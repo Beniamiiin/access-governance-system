@@ -7,11 +7,13 @@ tasks:
     desc: Start system
     deps:
       - access-governance-bot-up
+      - authorization-bot-up
 
   down:
     desc: Stop system
     deps:
       - access-governance-bot-down
+      - authorization-bot-down
 
   # Access Governance Bot
 
@@ -68,3 +70,31 @@ tasks:
         --project-name proposal-state-service
         down
         proposal-state-service
+
+  # Authorization Bot
+
+  authorization-bot-up:
+    desc: Start authorization bot
+    cmds:
+      - |
+        if ! docker plugin inspect loki >/dev/null 2>&1; then
+          docker plugin install grafana/loki-docker-driver:latest --alias loki --grant-all-permissions
+        fi
+      - docker-compose
+        --env-file .env
+        --file ./deployments/docker-compose.yml
+        --project-name authorization-bot
+        up
+        --detach
+        --build
+        authorization-bot
+
+  authorization-bot-down:
+    desc: Stop authorization bot
+    cmds:
+      - docker-compose
+        --env-file .env
+        --file ./deployments/docker-compose.yml
+        --project-name authorization-bot
+        down
+        authorization-bot

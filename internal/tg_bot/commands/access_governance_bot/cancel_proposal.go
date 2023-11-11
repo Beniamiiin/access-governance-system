@@ -1,9 +1,10 @@
-package commands
+package agbcommands
 
 import (
 	"access_governance_system/configs"
 	"access_governance_system/internal/db/models"
 	"access_governance_system/internal/db/repositories"
+	"access_governance_system/internal/tg_bot/commands"
 	tgbot "access_governance_system/internal/tg_bot/extension"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -18,7 +19,7 @@ type cancelProposalCommand struct {
 	logger         *zap.SugaredLogger
 }
 
-func NewCancelProposalCommand(appConfig configs.App, userRepository repositories.UserRepository, logger *zap.SugaredLogger) Command {
+func NewCancelProposalCommand(appConfig configs.App, userRepository repositories.UserRepository, logger *zap.SugaredLogger) commands.Command {
 	return &cancelProposalCommand{
 		appConfig:      appConfig,
 		userRepository: userRepository,

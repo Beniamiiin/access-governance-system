@@ -22,6 +22,18 @@ services:
     depends_on:
       - database
 
+  authorization-bot:
+    build:
+      context: ..
+      dockerfile: ./deployments/authorization_bot/Dockerfile
+    restart: on-failure:5
+    env_file:
+      - ../.env
+    ports:
+      - 8080:8080
+    depends_on:
+      - database
+
   database:
     image: postgres:15.3
     restart: always
