@@ -62,7 +62,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: .
-          file: ./deployments/authorization_bot/Dockerfile
+          file: ./deployments/authorization_bot/telegram/Dockerfile
           build-args: |
             ENVIRONMENT=${{ vars.ENVIRONMENT }}
             COMMUNITY_NAME=${{ vars.COMMUNITY_NAME }}
@@ -79,7 +79,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: .
-          file: ./deployments/authorization_bot/Dockerfile
+          file: ./deployments/authorization_bot/discord/Dockerfile
           build-args: |
             ENVIRONMENT=${{ vars.ENVIRONMENT }}
             COMMUNITY_NAME=${{ vars.COMMUNITY_NAME }}
