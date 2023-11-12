@@ -11,8 +11,8 @@ type AccessGovernanceBotConfig struct {
 	App                 App
 	DB                  DB
 	Logger              Logger
-	AccessGovernanceBot Telegram
-	VoteBot             Telegram
+	AccessGovernanceBot Bot
+	VoteBot             Bot
 	VoteAPI             VoteAPI
 }
 
@@ -34,7 +34,7 @@ type ProposalStateServiceConfig struct {
 	App                 App
 	DB                  DB
 	Logger              Logger
-	AccessGovernanceBot Telegram
+	AccessGovernanceBot Bot
 	VoteAPI             VoteAPI
 
 	Quorum               float64 `env:"QUORUM"`                   // 30% initial parameter for quorum
@@ -55,23 +55,42 @@ func LoadProposalStateServiceConfig() (ProposalStateServiceConfig, error) {
 	return config, nil
 }
 
-type AuthrozationBotConfig struct {
+type TelegramAuthrozationBotConfig struct {
 	App                     App
 	DB                      DB
 	Logger                  Logger
 	DiscordAuthrozationBot  Discord
-	TelegramAuthrozationBot Telegram
+	TelegramAuthrozationBot Bot
 }
 
-func LoadAuthrozationBotConfig() (AuthrozationBotConfig, error) {
-	var config AuthrozationBotConfig
+func LoadTelegramAuthrozationBotConfig() (TelegramAuthrozationBotConfig, error) {
+	var config TelegramAuthrozationBotConfig
 
 	if err := env.Parse(&config); err != nil {
-		return AuthrozationBotConfig{}, fmt.Errorf("failed to parse config: %w", err)
+		return TelegramAuthrozationBotConfig{}, fmt.Errorf("failed to parse config: %w", err)
 	}
 
 	config.TelegramAuthrozationBot.Token = os.Getenv("TELEGRAM_AUTHORIZATION_BOT_TOKEN")
-	config.Logger.AppName = "authorization-bot"
+	config.Logger.AppName = "authorization-bot-telegram"
+
+	return config, nil
+}
+
+type DiscordAuthrozationBotConfig struct {
+	App             App
+	Logger          Logger
+	AuthrozationBot Bot
+}
+
+func LoadDiscordAuthrozationBotConfig() (DiscordAuthrozationBotConfig, error) {
+	var config DiscordAuthrozationBotConfig
+
+	if err := env.Parse(&config); err != nil {
+		return DiscordAuthrozationBotConfig{}, fmt.Errorf("failed to parse config: %w", err)
+	}
+
+	config.AuthrozationBot.Token = os.Getenv("DISCORD_AUTHORIZATION_BOT_TOKEN")
+	config.Logger.AppName = "authorization-bot-discord"
 
 	return config, nil
 }

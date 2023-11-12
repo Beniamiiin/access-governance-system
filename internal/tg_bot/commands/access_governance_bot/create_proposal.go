@@ -64,7 +64,7 @@ func (c *createProposalCommand) CanHandle(command string) bool {
 	return command == createProposalCommandName
 }
 
-func (c *createProposalCommand) Handle(command string, user *models.User, chatID int64) []tgbotapi.Chattable {
+func (c *createProposalCommand) Handle(command, arguments string, user *models.User, chatID int64) []tgbotapi.Chattable {
 	var message tgbotapi.Chattable
 
 	if command == createProposalCommandName {

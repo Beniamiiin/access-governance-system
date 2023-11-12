@@ -8,5 +8,5 @@ import (
 
 type Command interface {
 	CanHandle(command string) bool
-	Handle(text string, user *models.User, chatID int64) []tgbotapi.Chattable
+	Handle(text, arguments string, user *models.User, chatID int64) []tgbotapi.Chattable
 }

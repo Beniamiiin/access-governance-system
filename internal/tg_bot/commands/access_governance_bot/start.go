@@ -32,7 +32,7 @@ func (c *startCommand) CanHandle(command string) bool {
 	return command == startCommandName
 }
 
-func (c *startCommand) Handle(text string, user *models.User, chatID int64) []tgbotapi.Chattable {
+func (c *startCommand) Handle(text, arguments string, user *models.User, chatID int64) []tgbotapi.Chattable {
 	parseMode := tgbotapi.ModeMarkdownV2
 
 	messageText := tgbotapi.EscapeText(parseMode, fmt.Sprintf(`

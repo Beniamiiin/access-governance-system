@@ -87,14 +87,20 @@ tasks:
         up
         --detach
         --build
-        authorization-bot
+        authorization-bot-telegram
 
   authorization-bot-down:
     desc: Stop authorization bot
     cmds:
       - docker-compose
-        --env-file .env
         --file ./deployments/docker-compose.yml
-        --project-name authorization-bot
         down
-        authorization-bot
+        authorization-bot-telegram
+      - docker-compose
+        --file ./deployments/docker-compose.yml
+        down
+        authorization-bot-discord
+      - docker-compose
+        --file ./deployments/docker-compose.yml
+        down
+        database

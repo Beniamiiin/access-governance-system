@@ -1,5 +1,5 @@
 package configs
 
-type Telegram struct {
+type Bot struct {
 	Token string
 }

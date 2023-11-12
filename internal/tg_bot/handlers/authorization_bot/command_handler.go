@@ -63,7 +63,7 @@ func (h *authorizationBotCommandHandler) Handle(update tgbotapi.Update) []tgbota
 
 		if message.IsCommand() {
 			h.logger.Infow("received command", "command", message.Command())
-			return h.tryToHandleCommand(message.Command(), h.commands, user, chatID)
+			return h.tryToHandleCommand(message, h.commands, user, chatID)
 		}
 	}
 
@@ -71,10 +71,13 @@ func (h *authorizationBotCommandHandler) Handle(update tgbotapi.Update) []tgbota
 	return []tgbotapi.Chattable{}
 }
 
-func (h *authorizationBotCommandHandler) tryToHandleCommand(command string, commands []commands.Command, user *models.User, chatID int64) []tgbotapi.Chattable {
+func (h *authorizationBotCommandHandler) tryToHandleCommand(message *tgbotapi.Message, commands []commands.Command, user *models.User, chatID int64) []tgbotapi.Chattable {
+	command := message.Command()
+	arguments := message.CommandArguments()
+
 	for _, handler := range commands {
 		if handler.CanHandle(command) {
-			return handler.Handle(command, user, chatID)
+			return handler.Handle(command, arguments, user, chatID)
 		}
 	}
 

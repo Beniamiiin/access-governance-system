@@ -32,7 +32,7 @@ func (c *approvedProposalsCommand) CanHandle(command string) bool {
 	return command == approvedProposalsCommandName
 }
 
-func (c *approvedProposalsCommand) Handle(text string, user *models.User, chatID int64) []tgbotapi.Chattable {
+func (c *approvedProposalsCommand) Handle(text, arguments string, user *models.User, chatID int64) []tgbotapi.Chattable {
 	proposals, err := c.proposalRepository.GetManyByStatus(models.ProposalStatusApproved, models.ProposalStatusRejected)
 	if err != nil {
 		c.logger.Errorw("failed to get proposals", "error", err)

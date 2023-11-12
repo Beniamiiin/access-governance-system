@@ -21,7 +21,7 @@ import (
 )
 
 func main() {
-	config, err := configs.LoadAuthrozationBotConfig()
+	config, err := configs.LoadTelegramAuthrozationBotConfig()
 	logger := di.NewLogger(config.Logger.AppName, config.App.Environment, config.Logger.URL)
 
 	if err != nil {
@@ -55,7 +55,7 @@ func main() {
 
 func settingUpHealthCheckServer(logger *zap.SugaredLogger) {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/authorization-bot/healthcheck", healthCheckHandler)
+	mux.HandleFunc("/authorization-bot-telegram/healthcheck", healthCheckHandler)
 
 	server := &http.Server{Addr: ":8080", Handler: mux}
 

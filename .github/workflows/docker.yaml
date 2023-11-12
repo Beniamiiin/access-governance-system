@@ -58,7 +58,7 @@ jobs:
           push: true
           tags: ghcr.io/beniamiiin/access-governance-system:pss
 
-      - name: Build and push AuthorizationBot
+      - name: Build and push TelegramAuthorizationBot
         uses: docker/build-push-action@v4
         with:
           context: .
@@ -70,6 +70,20 @@ jobs:
             DB_URL=${{ secrets.DB_URL }}
             TELEGRAM_AUTHORIZATION_BOT_TOKEN=${{ secrets.TELEGRAM_AUTHORIZATION_BOT_TOKEN }}
             DISCORD_AUTHORIZATION_BOT_TOKEN=${{ secrets.DISCORD_AUTHORIZATION_BOT_TOKEN }}
-            DISCORD_AUTHORIZATION_CHANNEL_ID=${{ secrets.DISCORD_AUTHORIZATION_CHANNEL_ID }}
+            DISCORD_SERVER_ID=${{ secrets.DISCORD_SERVER_ID }}
+            DISCORD_MEMBER_ROLE_ID=${{ secrets.DISCORD_MEMBER_ROLE_ID }}
           push: true
-          tags: ghcr.io/beniamiiin/access-governance-system:ab
+          tags: ghcr.io/beniamiiin/access-governance-system:tab
+
+      - name: Build and push DiscordAuthorizationBot
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./deployments/authorization_bot/Dockerfile
+          build-args: |
+            ENVIRONMENT=${{ vars.ENVIRONMENT }}
+            COMMUNITY_NAME=${{ vars.COMMUNITY_NAME }}
+            LOKI_URL=${{ secrets.LOKI_URL }}
+            DISCORD_AUTHORIZATION_BOT_TOKEN=${{ secrets.DISCORD_AUTHORIZATION_BOT_TOKEN }}
+          push: true
+          tags: ghcr.io/beniamiiin/access-governance-system:dab

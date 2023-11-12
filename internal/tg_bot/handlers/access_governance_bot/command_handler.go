@@ -145,7 +145,7 @@ func (h *accessGovernanceBotCommandHandler) tryToHandleCommand(command string, c
 				h.logger.Errorw("failed to update user", "error", err)
 			}
 
-			return handler.Handle(command, user, chatID)
+			return handler.Handle(command, "", user, chatID)
 		}
 	}
 
@@ -158,7 +158,7 @@ func (h *accessGovernanceBotCommandHandler) tryToHandleSubCommand(command, subCo
 
 	for _, handler := range commands {
 		if handler.CanHandle(command) {
-			responseMessage := handler.Handle(subCommand, user, chatID)
+			responseMessage := handler.Handle(subCommand, "", user, chatID)
 			if responseMessage == nil {
 				h.logger.Errorw("failed to handle subcommand", "subCommand", subCommand)
 				break
@@ -190,7 +190,7 @@ func (h *accessGovernanceBotCommandHandler) tryToHandleQueryCallback(query strin
 				h.logger.Errorw("failed to update user", "error", err)
 			}
 
-			return handler.Handle(query, user, chatID)
+			return handler.Handle(query, "", user, chatID)
 		}
 	}
 

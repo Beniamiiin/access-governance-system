@@ -8,7 +8,3 @@ type App struct {
 	InitialSeeders         []string `env:"INITIAL_SEEDERS" envSeparator:","`
 	MembersChatID          int64    `env:"MEMBERS_CHAT_ID,notEmpty"`
 }
-
-func (c App) IsDevEnvironment() bool {
-	return c.Environment == "development"
-}

@@ -138,18 +138,27 @@ tasks:
     deps:
       - install-docker-plugins
     vars:
-      URL: ghcr.io/beniamiiin/access-governance-system:ab
-      SERVICE_NAME: authorization-bot
+      TELEGRAM_BOT_URL: ghcr.io/beniamiiin/access-governance-system:tab
+      TELEGRAM_SERVICE_NAME: authorization-bot-telegram
+      DISCORD_BOT_URL: ghcr.io/beniamiiin/access-governance-system:dab
+      DISCORD_SERVICE_NAME: authorization-bot-discord
     cmds:
-      - docker pull {{.URL}}
-      - docker image tag {{.URL}} {{.SERVICE_NAME}}
-      - docker rmi {{.URL}}
-      - docker run --detach --interactive --tty --net {{.NETWORK_NAME}} --name {{.SERVICE_NAME}} {{.SERVICE_NAME}}
+      - docker pull {{.TELEGRAM_BOT_URL}}
+      - docker image tag {{.TELEGRAM_BOT_URL}} {{.TELEGRAM_SERVICE_NAME}}
+      - docker rmi {{.TELEGRAM_BOT_URL}}
+      - docker run --detach --interactive --tty --net {{.NETWORK_NAME}} --name {{.TELEGRAM_SERVICE_NAME}} {{.TELEGRAM_SERVICE_NAME}}
+      - docker pull {{.DISCORD_BOT_URL}}
+      - docker image tag {{.DISCORD_BOT_URL}} {{.DISCORD_SERVICE_NAME}}
+      - docker rmi {{.DISCORD_BOT_URL}}
+      - docker run --detach --interactive --tty --net {{.NETWORK_NAME}} --name {{.DISCORD_SERVICE_NAME}} {{.DISCORD_SERVICE_NAME}}
 
   authorization-bot-down:
     desc: Stop authorization bot
     vars:
-      SERVICE_NAME: authorization-bot
+      TELEGRAM_SERVICE_NAME: authorization-bot-telegram
+      DISCORD_SERVICE_NAME: authorization-bot-discord
     cmds:
-      - docker rm -f {{.SERVICE_NAME}}
-      - docker rmi -f {{.SERVICE_NAME}}
+      - docker rm -f {{.TELEGRAM_SERVICE_NAME}}
+      - docker rmi -f {{.TELEGRAM_SERVICE_NAME}}
+      - docker rm -f {{.DISCORD_SERVICE_NAME}}
+      - docker rmi -f {{.DISCORD_SERVICE_NAME}}

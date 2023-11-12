@@ -22,17 +22,28 @@ services:
     depends_on:
       - database
 
-  authorization-bot:
+  authorization-bot-telegram:
     build:
       context: ..
-      dockerfile: ./deployments/authorization_bot/Dockerfile
+      dockerfile: ./deployments/authorization_bot/telegram/Dockerfile
     restart: on-failure:5
     env_file:
       - ../.env
     ports:
       - 8080:8080
     depends_on:
+      - authorization-bot-discord
       - database
+
+  authorization-bot-discord:
+    build:
+      context: ..
+      dockerfile: ./deployments/authorization_bot/discord/Dockerfile
+    restart: on-failure:5
+    env_file:
+      - ../.env
+    ports:
+      - 8081:8081
 
   database:
     image: postgres:15.3
