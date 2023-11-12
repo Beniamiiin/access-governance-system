@@ -59,6 +59,12 @@ func (c *startCommand) Handle(text, discordID string, user *models.User, chatID 
 		return []tgbotapi.Chattable{extension.DefaultErrorMessage(chatID)}
 	}
 
+	_, err = c.userRepository.Update(user)
+	if err != nil {
+		c.logger.Errorw("failed to update user", "error", err)
+		return []tgbotapi.Chattable{extension.DefaultErrorMessage(chatID)}
+	}
+
 	message := tgbotapi.NewMessage(chatID, "Привет, ты успешно авторизован, можешь возвращаться в Discord")
 	return []tgbotapi.Chattable{message}
 }
