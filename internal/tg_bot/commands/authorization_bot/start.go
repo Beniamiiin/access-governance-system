@@ -49,7 +49,7 @@ func (c *startCommand) Handle(text, discordID string, user *models.User, chatID 
 
 	err := c.discord.GuildMemberRoleAdd(c.config.ChannelID, discordID, c.config.MemberRoleID)
 	if err != nil {
-		c.logger.Errorw("failed to update user role", err)
+		c.logger.Errorw("failed to add a role", "error", err)
 		return []tgbotapi.Chattable{extension.DefaultErrorMessage(chatID)}
 	}
 
@@ -63,6 +63,11 @@ func (c *startCommand) Handle(text, discordID string, user *models.User, chatID 
 	if err != nil {
 		c.logger.Errorw("failed to update user", "error", err)
 		return []tgbotapi.Chattable{extension.DefaultErrorMessage(chatID)}
+	}
+
+	err = c.discord.GuildMemberRoleRemove(c.config.ChannelID, discordID, c.config.GuestRoleID)
+	if err != nil {
+		c.logger.Warnw("failed to remove a role", "error", err)
 	}
 
 	message := tgbotapi.NewMessage(chatID, "Привет, ты успешно авторизован, можешь возвращаться в Discord")

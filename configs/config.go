@@ -79,7 +79,7 @@ func LoadTelegramAuthrozationBotConfig() (TelegramAuthrozationBotConfig, error) 
 type DiscordAuthrozationBotConfig struct {
 	App             App
 	Logger          Logger
-	AuthrozationBot Bot
+	AuthrozationBot Discord
 }
 
 func LoadDiscordAuthrozationBotConfig() (DiscordAuthrozationBotConfig, error) {
@@ -89,7 +89,6 @@ func LoadDiscordAuthrozationBotConfig() (DiscordAuthrozationBotConfig, error) {
 		return DiscordAuthrozationBotConfig{}, fmt.Errorf("failed to parse config: %w", err)
 	}
 
-	config.AuthrozationBot.Token = os.Getenv("DISCORD_AUTHORIZATION_BOT_TOKEN")
 	config.Logger.AppName = "authorization-bot-discord"
 
 	return config, nil
