@@ -60,7 +60,7 @@ func (h *accessGovernanceBotCommandHandler) Handle(update tgbotapi.Update) []tgb
 		telegramUser = callbackQuery.From
 	}
 
-	if telegramUser.ID == chatID {
+	if telegramUser.ID != chatID {
 		return []tgbotapi.Chattable{}
 	}
 
