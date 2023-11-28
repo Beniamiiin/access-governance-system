@@ -60,6 +60,10 @@ func (h *accessGovernanceBotCommandHandler) Handle(update tgbotapi.Update) []tgb
 		telegramUser = callbackQuery.From
 	}
 
+	if telegramUser.ID == chatID {
+		return []tgbotapi.Chattable{}
+	}
+
 	user, errMessage := h.createUserIfNeeded(telegramUser, chatID)
 	if errMessage != nil {
 		return []tgbotapi.Chattable{errMessage}
