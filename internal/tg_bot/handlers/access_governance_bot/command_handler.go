@@ -61,6 +61,7 @@ func (h *accessGovernanceBotCommandHandler) Handle(update tgbotapi.Update) []tgb
 	}
 
 	if telegramUser.ID != chatID {
+		h.logger.Infow("received message", "message", message)
 		return []tgbotapi.Chattable{}
 	}
 
