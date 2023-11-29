@@ -60,6 +60,25 @@ func (h *accessGovernanceBotCommandHandler) Handle(update tgbotapi.Update) []tgb
 		telegramUser = callbackQuery.From
 	}
 
+	if (update.ChatMember.NewChatMember != tgbotapi.ChatMember{}) {
+		newChatMember := update.ChatMember.NewChatMember.User
+
+		user, err := h.userRepository.GetOneByTelegramNickname(newChatMember.UserName)
+		if err != nil {
+			h.logger.Errorw("failed to get user", "error", err)
+			return []tgbotapi.Chattable{}
+		}
+
+		user.TelegramID = newChatMember.ID
+
+		_, err = h.userRepository.Update(user)
+		if err != nil {
+			h.logger.Errorw("failed to update user", "error", err)
+		}
+
+		return []tgbotapi.Chattable{}
+	}
+
 	if telegramUser.ID != chatID {
 		h.logger.Infow("received message", "message", message)
 		return []tgbotapi.Chattable{}
