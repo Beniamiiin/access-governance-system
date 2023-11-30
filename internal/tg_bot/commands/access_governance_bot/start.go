@@ -76,25 +76,29 @@ func (c *startCommand) createInstructionMessageForSeeder(chatID int64) tgbotapi.
 		}
 	}
 
-	membersChatInviteLink, err := c.createMembersChatInviteLink()
-	if err != nil {
-		c.logger.Fatalf("could not create members chat invite link: %v", err)
-		return nil
-	}
-
 	seedersChatInviteLink, err := c.createSeedersChatInviteLink()
 	if err != nil {
 		c.logger.Fatalf("could not create seeders chat invite link: %v", err)
 		return nil
 	}
 
+	membersChatInviteLink, err := c.createMembersChatInviteLink()
+	if err != nil {
+		c.logger.Fatalf("could not create members chat invite link: %v", err)
+		return nil
+	}
+
 	messageText := fmt.Sprintf(`
 Я заметил, что ты являешься сидером, но ты еще не полностью авторизован в нашем сообществе.
 
-Для того, чтобы авторизоваться, зайди в нашу группу для members(%s) и для seeders(%s).
+Для того, чтобы авторизоваться, зайди в нашу группу для seeders(%s) и для members(%s).
 И следуй инструкции, которую ты найдешь в закрепленном сообщении в группе для members.
-`, membersChatInviteLink, seedersChatInviteLink)
-	return tgbotapi.NewMessage(chatID, messageText)
+`, seedersChatInviteLink, membersChatInviteLink)
+
+	message := tgbotapi.NewMessage(chatID, messageText)
+	message.DisableWebPagePreview = true
+
+	return message
 }
 
 func (c *startCommand) createMembersChatInviteLink() (string, error) {

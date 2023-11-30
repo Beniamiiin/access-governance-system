@@ -41,17 +41,9 @@ func (c *startCommand) CanHandle(command string) bool {
 }
 
 func (c *startCommand) Handle(text, discordID string, user *models.User, chatID int64) []tgbotapi.Chattable {
-	if user.Role == models.UserRoleMember || user.Role == models.UserRoleSeeder {
-		if user.DiscordID == 0 {
-			user.DiscordID, _ = strconv.Atoi(discordID)
-			_, err := c.userRepository.Update(user)
-			if err != nil {
-				c.logger.Errorw("failed to update user", "user", user, "error", err)
-				return []tgbotapi.Chattable{extension.DefaultErrorMessage(chatID)}
-			}
-		}
+	if (user.Role == models.UserRoleMember || user.Role == models.UserRoleSeeder) && user.DiscordID != 0 {
 		return []tgbotapi.Chattable{
-			tgbotapi.NewMessage(chatID, "Привет, ты уже авторизован."),
+			tgbotapi.NewMessage(chatID, "Привет, ты успешно авторизован, можешь возвращаться в Discord"),
 		}
 	}
 
