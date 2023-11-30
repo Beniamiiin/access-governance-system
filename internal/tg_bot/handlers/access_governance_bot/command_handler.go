@@ -60,32 +60,28 @@ func (h *accessGovernanceBotCommandHandler) Handle(update tgbotapi.Update) []tgb
 		telegramUser = callbackQuery.From
 	}
 
-	// if update.ChatMember != nil {
-	// 	h.logger.Infow("received NewChatMember", update.ChatMember.NewChatMember)
+	if len(message.NewChatMembers) > 0 {
+		for _, newChatMember := range message.NewChatMembers {
+			user, err := h.userRepository.GetOneByTelegramNickname(newChatMember.UserName)
+			if err != nil {
+				h.logger.Errorw("failed to get user", "error", err)
+				continue
+			}
 
-	// 	if (update.ChatMember.NewChatMember != tgbotapi.ChatMember{}) {
-	// 		newChatMember := update.ChatMember.NewChatMember.User
-	// 		h.logger.Infow("received NewChatMemberUser", newChatMember)
-	// 		user, err := h.userRepository.GetOneByTelegramNickname(newChatMember.UserName)
-	// 		if err != nil {
-	// 			h.logger.Errorw("failed to get user", "error", err)
-	// 			return []tgbotapi.Chattable{}
-	// 		}
-	// 		h.logger.Infow("received NewChatMember", user)
-	// 		user.TelegramID = newChatMember.ID
+			user.TelegramID = newChatMember.ID
 
-	// 		_, err = h.userRepository.Update(user)
-	// 		if err != nil {
-	// 			h.logger.Errorw("failed to update user", "error", err)
-	// 			return []tgbotapi.Chattable{}
-	// 		}
+			_, err = h.userRepository.Update(user)
+			if err != nil {
+				h.logger.Errorw("failed to update user", "error", err)
+				continue
+			}
+		}
 
-	// 		return []tgbotapi.Chattable{}
-	// 	}
-	// }
+		return []tgbotapi.Chattable{}
+	}
 
 	if telegramUser.ID != chatID {
-		h.logger.Infow("received update", "update", update)
+		h.logger.Infow("received message", "message", message)
 		return []tgbotapi.Chattable{}
 	}
 
