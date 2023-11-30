@@ -50,7 +50,7 @@ func main() {
 	tgbot.NewBot(
 		agbhandlers.NewAccessGovernanceBotCommandHandler(config.App, userRepository, logger,
 			[]commands.Command{
-				agbcommands.NewStartCommand(config.App, userRepository, logger),
+				agbcommands.NewStartCommand(config, userRepository, logger),
 				agbcommands.NewCancelProposalCommand(config.App, userRepository, logger),
 				agbcommands.NewApprovedProposalsCommand(proposalRepository, logger),
 				agbcommands.NewCreateProposalCommand(config, userRepository, proposalRepository, voteService, logger),
