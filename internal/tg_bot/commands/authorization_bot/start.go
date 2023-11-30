@@ -65,7 +65,9 @@ func (c *startCommand) Handle(text, discordID string, user *models.User, chatID 
 		return []tgbotapi.Chattable{extension.DefaultErrorMessage(chatID)}
 	}
 
-	user.Role = models.UserRoleMember
+	if user.Role == models.UserRoleGuest {
+		user.Role = models.UserRoleMember
+	}
 
 	_, err = c.userRepository.Update(user)
 	if err != nil {
