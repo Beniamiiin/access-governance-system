@@ -38,6 +38,7 @@ jobs:
             TELEGRAM_ACCESS_GOVERNANCE_BOT_TOKEN=${{ secrets.TELEGRAM_ACCESS_GOVERNANCE_BOT_TOKEN }}
             TELEGRAM_VOTE_BOT_TOKEN=${{ secrets.TELEGRAM_VOTE_BOT_TOKEN }}
             MEMBERS_CHAT_ID=${{ vars.MEMBERS_CHAT_ID }}
+            SEEDERS_CHAT_ID=${{ vars.SEEDERS_CHAT_ID }}
           push: true
           tags: ghcr.io/beniamiiin/access-governance-system:agb
 
@@ -55,6 +56,7 @@ jobs:
             YES_VOTES_TO_OVERCOME_NO=${{ vars.YES_VOTES_TO_OVERCOME_NO }}
             TELEGRAM_ACCESS_GOVERNANCE_BOT_TOKEN=${{ secrets.TELEGRAM_ACCESS_GOVERNANCE_BOT_TOKEN }}
             MEMBERS_CHAT_ID=${{ vars.MEMBERS_CHAT_ID }}
+            SEEDERS_CHAT_ID=${{ vars.SEEDERS_CHAT_ID }}
           push: true
           tags: ghcr.io/beniamiiin/access-governance-system:pss
 

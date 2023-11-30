@@ -7,4 +7,5 @@ type App struct {
 	RenominationPeriodDays int      `env:"RENOMINATION_PERIOD_DAYS" envDefault:"3"`
 	InitialSeeders         []string `env:"INITIAL_SEEDERS" envSeparator:","`
 	MembersChatID          int64    `env:"MEMBERS_CHAT_ID"`
+	SeedersChatID          int64    `env:"SEEDERS_CHAT_ID"`
 }
