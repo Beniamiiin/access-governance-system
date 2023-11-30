@@ -71,7 +71,6 @@ jobs:
             TELEGRAM_AUTHORIZATION_BOT_TOKEN=${{ secrets.TELEGRAM_AUTHORIZATION_BOT_TOKEN }}
             DISCORD_AUTHORIZATION_BOT_TOKEN=${{ secrets.DISCORD_AUTHORIZATION_BOT_TOKEN }}
             DISCORD_SERVER_ID=${{ secrets.DISCORD_SERVER_ID }}
-            DISCORD_GUEST_ROLE_ID=${{ secrets.DISCORD_GUEST_ROLE_ID }}
             DISCORD_MEMBER_ROLE_ID=${{ secrets.DISCORD_MEMBER_ROLE_ID }}
           push: true
           tags: ghcr.io/beniamiiin/access-governance-system:tab
