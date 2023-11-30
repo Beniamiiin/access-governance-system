@@ -49,25 +49,37 @@ func (c *startCommand) Handle(text, discordID string, user *models.User, chatID 
 
 	err := c.discord.GuildMemberRoleAdd(c.config.ChannelID, discordID, c.config.MemberRoleID)
 	if err != nil {
-		c.logger.Errorw("failed to add a role", "error", err)
+		c.logger.Errorw(
+			"failed to add a role",
+			"channel_id", c.config.ChannelID,
+			"discord_id", discordID,
+			"role_id", c.config.MemberRoleID,
+			"error", err,
+		)
 		return []tgbotapi.Chattable{extension.DefaultErrorMessage(chatID)}
 	}
 
 	user.DiscordID, err = strconv.Atoi(discordID)
 	if err != nil {
-		c.logger.Errorw("failed to parse discord id", "error", err)
+		c.logger.Errorw("failed to parse discord id", "discord_id", discordID, "error", err)
 		return []tgbotapi.Chattable{extension.DefaultErrorMessage(chatID)}
 	}
 
 	_, err = c.userRepository.Update(user)
 	if err != nil {
-		c.logger.Errorw("failed to update user", "error", err)
+		c.logger.Errorw("failed to update user", "user", user, "error", err)
 		return []tgbotapi.Chattable{extension.DefaultErrorMessage(chatID)}
 	}
 
 	err = c.discord.GuildMemberRoleRemove(c.config.ChannelID, discordID, c.config.GuestRoleID)
 	if err != nil {
-		c.logger.Warnw("failed to remove a role", "error", err)
+		c.logger.Warnw(
+			"failed to remove a role",
+			"channel_id", c.config.ChannelID,
+			"discord_id", discordID,
+			"role_id", c.config.GuestRoleID,
+			"error", err,
+		)
 	}
 
 	message := tgbotapi.NewMessage(chatID, "Привет, ты успешно авторизован, можешь возвращаться в Discord")
