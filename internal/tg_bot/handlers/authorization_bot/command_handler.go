@@ -35,7 +35,7 @@ func NewAuthorizationBotCommandHandler(
 	}
 }
 
-func (h *authorizationBotCommandHandler) Handle(update tgbotapi.Update) []tgbotapi.Chattable {
+func (h *authorizationBotCommandHandler) Handle(bot *tgbotapi.BotAPI, update tgbotapi.Update) []tgbotapi.Chattable {
 	h.logger.Info("received message")
 
 	message := update.Message

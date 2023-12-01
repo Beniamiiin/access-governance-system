@@ -15,7 +15,7 @@ import (
 )
 
 type accessGovernanceBotCommandHandler struct {
-	appConfig      configs.App
+	config         configs.AccessGovernanceBotConfig
 	userRepository repositories.UserRepository
 	logger         *zap.SugaredLogger
 
@@ -23,20 +23,20 @@ type accessGovernanceBotCommandHandler struct {
 }
 
 func NewAccessGovernanceBotCommandHandler(
-	appConfig configs.App,
+	config configs.AccessGovernanceBotConfig,
 	userRepository repositories.UserRepository,
 	logger *zap.SugaredLogger,
 	commands []commands.Command,
 ) handlers.CommandHandler {
 	return &accessGovernanceBotCommandHandler{
-		appConfig:      appConfig,
+		config:         config,
 		userRepository: userRepository,
 		logger:         logger,
 		commands:       commands,
 	}
 }
 
-func (h *accessGovernanceBotCommandHandler) Handle(update tgbotapi.Update) []tgbotapi.Chattable {
+func (h *accessGovernanceBotCommandHandler) Handle(bot *tgbotapi.BotAPI, update tgbotapi.Update) []tgbotapi.Chattable {
 	h.logger.Info("received message")
 
 	message := update.Message
@@ -61,6 +61,8 @@ func (h *accessGovernanceBotCommandHandler) Handle(update tgbotapi.Update) []tgb
 	}
 
 	if len(message.NewChatMembers) > 0 {
+		messages := []tgbotapi.Chattable{}
+
 		for _, newChatMember := range message.NewChatMembers {
 			user, err := h.userRepository.GetOneByTelegramNickname(newChatMember.UserName)
 			if err != nil {
@@ -75,9 +77,19 @@ func (h *accessGovernanceBotCommandHandler) Handle(update tgbotapi.Update) []tgb
 				h.logger.Errorw("failed to update user", "error", err)
 				continue
 			}
+
+			text := fmt.Sprintf(`
+Привет, %s! Добро пожаловать в чат %s.
+
+Для того, чтобы авторизоваться тебе надо подключиться к нашему discord серверу(%s) и отправить команду %s в чате в discord.
+			`, newChatMember.FirstName, h.config.App.CommunityName, h.config.DiscordInviteLink, "`!authorize`")
+			message := tgbotapi.NewMessage(newChatMember.ID, text)
+			message.DisableWebPagePreview = true
+			message.ParseMode = tgbotapi.ModeMarkdown
+			messages = append(messages, message)
 		}
 
-		return []tgbotapi.Chattable{}
+		return messages
 	}
 
 	if telegramUser.ID != chatID {
@@ -119,7 +131,7 @@ func (h *accessGovernanceBotCommandHandler) createUserIfNeeded(telegramUser *tgb
 	if user == nil {
 		isItSeeder := false
 
-		for _, seederName := range h.appConfig.InitialSeeders {
+		for _, seederName := range h.config.App.InitialSeeders {
 			if telegramUser.UserName == seederName {
 				user = &models.User{
 					Name: func() string {
@@ -152,7 +164,7 @@ func (h *accessGovernanceBotCommandHandler) createUserIfNeeded(telegramUser *tgb
 		}
 
 		if !isItSeeder {
-			return nil, tgbotapi.NewMessage(chatID, fmt.Sprintf("Привет! К сожалению, ты не участник сообщества %s.", h.appConfig.CommunityName))
+			return nil, tgbotapi.NewMessage(chatID, fmt.Sprintf("Привет! К сожалению, ты не участник сообщества %s.", h.config.App.CommunityName))
 		}
 	}
 

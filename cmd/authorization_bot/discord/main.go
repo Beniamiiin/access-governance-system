@@ -64,19 +64,21 @@ func authorization(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	if m.Content == "!authorize" {
-		tgBotLink := fmt.Sprintf("https://t.me/S16AuthorizationBot?start=%s", m.Author.ID)
-		message := fmt.Sprintf("Привет, для авторизации в сообществе %s перейди по ссылке %s", config.App.CommunityName, tgBotLink)
+	if m.Content != "!authorize" {
+		return
+	}
 
-		channel, err := s.UserChannelCreate(m.Author.ID)
-		if err != nil {
-			fmt.Println("failed to create author channel", "error", err)
-		}
+	tgBotLink := fmt.Sprintf("https://t.me/S16AuthorizationBot?start=%s", m.Author.ID)
+	message := fmt.Sprintf("Привет, для авторизации в сообществе %s перейди по ссылке %s", config.App.CommunityName, tgBotLink)
 
-		_, err = s.ChannelMessageSend(channel.ID, message)
-		if err != nil {
-			fmt.Println("failed to send message", "error", err)
-		}
+	channel, err := s.UserChannelCreate(m.Author.ID)
+	if err != nil {
+		fmt.Println("failed to create author channel", "error", err)
+	}
+
+	_, err = s.ChannelMessageSend(channel.ID, message)
+	if err != nil {
+		fmt.Println("failed to send message", "error", err)
 	}
 }
 

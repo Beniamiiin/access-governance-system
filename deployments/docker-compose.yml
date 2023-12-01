@@ -8,8 +8,6 @@ services:
       - ../.env
     ports:
       - 8080:8080
-    depends_on:
-      - database
 
   proposal-state-service:
     build:
@@ -19,8 +17,6 @@ services:
       - ../.env
     ports:
       - 8080:8080
-    depends_on:
-      - database
 
   authorization-bot-telegram:
     build:
@@ -33,7 +29,6 @@ services:
       - 8080:8080
     depends_on:
       - authorization-bot-discord
-      - database
 
   authorization-bot-discord:
     build:
@@ -44,11 +39,3 @@ services:
       - ../.env
     ports:
       - 8081:8081
-
-  database:
-    image: postgres:15.3
-    restart: always
-    environment:
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-    ports:
-      - 5432:5432

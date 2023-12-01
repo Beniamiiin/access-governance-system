@@ -28,7 +28,7 @@ func (b *bot) Start(token string, logger *zap.SugaredLogger) {
 	logger.Info("bot created")
 
 	for update := range updates {
-		for _, message := range b.handler.Handle(update) {
+		for _, message := range b.handler.Handle(bot, update) {
 			if _, err := bot.Send(message); err != nil {
 				logger.Errorw("failed to send message", "error", err)
 			}

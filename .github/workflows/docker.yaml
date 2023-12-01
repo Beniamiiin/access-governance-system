@@ -39,6 +39,7 @@ jobs:
             TELEGRAM_VOTE_BOT_TOKEN=${{ secrets.TELEGRAM_VOTE_BOT_TOKEN }}
             MEMBERS_CHAT_ID=${{ vars.MEMBERS_CHAT_ID }}
             SEEDERS_CHAT_ID=${{ vars.SEEDERS_CHAT_ID }}
+            DISCORD_INVITE_LINK=${{ secrets.DISCORD_INVITE_LINK }}
           push: true
           tags: ghcr.io/beniamiiin/access-governance-system:agb
 

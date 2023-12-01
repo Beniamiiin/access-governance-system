@@ -91,12 +91,16 @@ func (c *startCommand) createInstructionMessageForSeeder(chatID int64) tgbotapi.
 	messageText := fmt.Sprintf(`
 Я заметил, что ты являешься сидером, но ты еще не полностью авторизован в нашем сообществе.
 
-Для того, чтобы авторизоваться, зайди в нашу группу для seeders(%s) и для members(%s).
-И следуй инструкции, которую ты найдешь в закрепленном сообщении в группе для members.
-`, seedersChatInviteLink, membersChatInviteLink)
+Для того, чтобы авторизоваться тебе надо:
+1. Вступить в нашу группу для seeders - %s
+2. Вступить в нашу группу для members - %s
+3. Подключиться к нашему discord серверу - %s
+4. Отправить команду %s в чате в discord
+`, seedersChatInviteLink, membersChatInviteLink, c.config.DiscordInviteLink, "`!authorize`")
 
 	message := tgbotapi.NewMessage(chatID, messageText)
 	message.DisableWebPagePreview = true
+	message.ParseMode = tgbotapi.ModeMarkdown
 
 	return message
 }

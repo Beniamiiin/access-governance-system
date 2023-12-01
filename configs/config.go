@@ -14,6 +14,8 @@ type AccessGovernanceBotConfig struct {
 	AccessGovernanceBot Bot
 	VoteBot             Bot
 	VoteAPI             VoteAPI
+
+	DiscordInviteLink string `env:"DISCORD_INVITE_LINK"`
 }
 
 func LoadAccessGovernanceBotConfig() (AccessGovernanceBotConfig, error) {

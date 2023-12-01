@@ -5,5 +5,5 @@ import (
 )
 
 type CommandHandler interface {
-	Handle(update tgbotapi.Update) []tgbotapi.Chattable
+	Handle(bot *tgbotapi.BotAPI, update tgbotapi.Update) []tgbotapi.Chattable
 }
