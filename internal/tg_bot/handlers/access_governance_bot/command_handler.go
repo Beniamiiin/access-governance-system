@@ -65,7 +65,7 @@ func (h *accessGovernanceBotCommandHandler) Handle(bot *tgbotapi.BotAPI, update 
 
 		for _, newChatMember := range message.NewChatMembers {
 			user, err := h.userRepository.GetOneByTelegramNickname(newChatMember.UserName)
-			if err != nil {
+			if user == nil || err != nil {
 				h.logger.Errorw("failed to get user", "error", err)
 				continue
 			}
