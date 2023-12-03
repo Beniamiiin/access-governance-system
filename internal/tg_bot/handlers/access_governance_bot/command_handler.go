@@ -61,35 +61,7 @@ func (h *accessGovernanceBotCommandHandler) Handle(bot *tgbotapi.BotAPI, update 
 	}
 
 	if len(message.NewChatMembers) > 0 {
-		messages := []tgbotapi.Chattable{}
-
-		for _, newChatMember := range message.NewChatMembers {
-			user, err := h.userRepository.GetOneByTelegramNickname(newChatMember.UserName)
-			if user == nil || err != nil {
-				h.logger.Errorw("failed to get user", "error", err)
-				continue
-			}
-
-			user.TelegramID = newChatMember.ID
-
-			_, err = h.userRepository.Update(user)
-			if err != nil {
-				h.logger.Errorw("failed to update user", "error", err)
-				continue
-			}
-
-			text := fmt.Sprintf(`
-Привет, %s! Добро пожаловать в чат %s.
-
-Для того, чтобы авторизоваться тебе надо подключиться к нашему discord серверу(%s) и отправить команду %s в чате в discord.
-			`, newChatMember.FirstName, h.config.App.CommunityName, h.config.DiscordInviteLink, "`!authorize`")
-			message := tgbotapi.NewMessage(newChatMember.ID, text)
-			message.DisableWebPagePreview = true
-			message.ParseMode = tgbotapi.ModeMarkdown
-			messages = append(messages, message)
-		}
-
-		return messages
+		return h.handleNewChatMembers(bot, message)
 	}
 
 	if telegramUser.ID != chatID {
@@ -106,16 +78,16 @@ func (h *accessGovernanceBotCommandHandler) Handle(bot *tgbotapi.BotAPI, update 
 		h.logger.Infow("received message", "message", message)
 		if message.IsCommand() {
 			h.logger.Infow("received command", "command", message.Command())
-			return h.tryToHandleCommand(message.Command(), h.commands, user, chatID)
+			return h.tryToHandleCommand(message.Command(), h.commands, user, bot, chatID)
 		} else if user.TelegramState.LastCommand != "" {
 			h.logger.Infow("received subcommand", "subcommand", message.Text)
-			return h.tryToHandleSubCommand(user.TelegramState.LastCommand, message.Text, h.commands, user, chatID)
+			return h.tryToHandleSubCommand(user.TelegramState.LastCommand, message.Text, h.commands, user, bot, chatID)
 		}
 	}
 
 	if callbackQuery != nil {
 		h.logger.Infow("received callback query", "callback_query", callbackQuery)
-		return h.tryToHandleQueryCallback(callbackQuery.Data, h.commands, user, chatID)
+		return h.tryToHandleQueryCallback(callbackQuery.Data, h.commands, user, bot, chatID)
 	}
 
 	h.logger.Warn("received unknown message")
@@ -171,7 +143,7 @@ func (h *accessGovernanceBotCommandHandler) createUserIfNeeded(telegramUser *tgb
 	return user, nil
 }
 
-func (h *accessGovernanceBotCommandHandler) tryToHandleCommand(command string, commands []commands.Command, user *models.User, chatID int64) []tgbotapi.Chattable {
+func (h *accessGovernanceBotCommandHandler) tryToHandleCommand(command string, commands []commands.Command, user *models.User, bot *tgbotapi.BotAPI, chatID int64) []tgbotapi.Chattable {
 	for _, handler := range commands {
 		if handler.CanHandle(command) {
 			user.TempProposal = models.Proposal{}
@@ -182,7 +154,7 @@ func (h *accessGovernanceBotCommandHandler) tryToHandleCommand(command string, c
 				h.logger.Errorw("failed to update user", "error", err)
 			}
 
-			return handler.Handle(command, "", user, chatID)
+			return handler.Handle(command, "", user, bot, chatID)
 		}
 	}
 
@@ -190,12 +162,12 @@ func (h *accessGovernanceBotCommandHandler) tryToHandleCommand(command string, c
 	return []tgbotapi.Chattable{}
 }
 
-func (h *accessGovernanceBotCommandHandler) tryToHandleSubCommand(command, subCommand string, commands []commands.Command, user *models.User, chatID int64) []tgbotapi.Chattable {
+func (h *accessGovernanceBotCommandHandler) tryToHandleSubCommand(command, subCommand string, commands []commands.Command, user *models.User, bot *tgbotapi.BotAPI, chatID int64) []tgbotapi.Chattable {
 	command = strings.Split(command, ":")[0]
 
 	for _, handler := range commands {
 		if handler.CanHandle(command) {
-			responseMessage := handler.Handle(subCommand, "", user, chatID)
+			responseMessage := handler.Handle(subCommand, "", user, bot, chatID)
 			if responseMessage == nil {
 				h.logger.Errorw("failed to handle subcommand", "subCommand", subCommand)
 				break
@@ -209,7 +181,7 @@ func (h *accessGovernanceBotCommandHandler) tryToHandleSubCommand(command, subCo
 	return []tgbotapi.Chattable{}
 }
 
-func (h *accessGovernanceBotCommandHandler) tryToHandleQueryCallback(query string, commands []commands.Command, user *models.User, chatID int64) []tgbotapi.Chattable {
+func (h *accessGovernanceBotCommandHandler) tryToHandleQueryCallback(query string, commands []commands.Command, user *models.User, bot *tgbotapi.BotAPI, chatID int64) []tgbotapi.Chattable {
 	parts := strings.Split(query, ":")
 	if len(parts) == 0 {
 		h.logger.Error("received empty query callback")
@@ -227,10 +199,64 @@ func (h *accessGovernanceBotCommandHandler) tryToHandleQueryCallback(query strin
 				h.logger.Errorw("failed to update user", "error", err)
 			}
 
-			return handler.Handle(query, "", user, chatID)
+			return handler.Handle(query, "", user, bot, chatID)
 		}
 	}
 
 	h.logger.Errorw("received unknown command", "command", command)
 	return []tgbotapi.Chattable{}
+}
+
+func (h *accessGovernanceBotCommandHandler) handleNewChatMembers(bot *tgbotapi.BotAPI, message *tgbotapi.Message) []tgbotapi.Chattable {
+	messages := []tgbotapi.Chattable{}
+
+	for _, newChatMember := range message.NewChatMembers {
+		user, err := h.userRepository.GetOneByTelegramNickname(newChatMember.UserName)
+		if user == nil || err != nil {
+			h.logger.Errorw("failed to get user", "error", err)
+			continue
+		}
+
+		user.TelegramID = newChatMember.ID
+
+		_, err = h.userRepository.Update(user)
+		if err != nil {
+			h.logger.Errorw("failed to update user", "error", err)
+			continue
+		}
+
+		var messageText string
+
+		if user.Role == models.UserRoleSeeder {
+			seedersChatInviteLink, err := tgbot.CreateChatInviteLink(bot, h.config.App.SeedersChatID)
+			if err != nil {
+				h.logger.Fatalf("could not create seeders chat invite link: %v", err)
+				continue
+			}
+
+			messageText = fmt.Sprintf(`
+Привет, %s! Добро пожаловать в сообщество %s.
+
+Для того, чтобы авторизоваться тебе надо:
+1. Вступить в нашу группу для seeders - %s
+2. Подключиться к нашему discord серверу - %s
+3. Отправить команду %s в чате в discord
+`, newChatMember.FirstName, h.config.App.CommunityName, seedersChatInviteLink, h.config.DiscordInviteLink, "`!authorize`")
+		} else if user.Role == models.UserRoleMember {
+			messageText = fmt.Sprintf(`
+Привет, %s! Добро пожаловать в сообщество %s.
+
+Для того, чтобы авторизоваться тебе надо:
+1. Подключиться к нашему discord серверу - %s
+2. Отправить команду %s в чате в discord
+`, newChatMember.FirstName, h.config.App.CommunityName, h.config.DiscordInviteLink, "`!authorize`")
+		}
+
+		message := tgbotapi.NewMessage(newChatMember.ID, messageText)
+		message.DisableWebPagePreview = true
+		message.ParseMode = tgbotapi.ModeMarkdown
+		messages = append(messages, message)
+	}
+
+	return messages
 }

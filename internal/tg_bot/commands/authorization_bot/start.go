@@ -40,7 +40,7 @@ func (c *startCommand) CanHandle(command string) bool {
 	return command == startCommandName
 }
 
-func (c *startCommand) Handle(text, discordID string, user *models.User, chatID int64) []tgbotapi.Chattable {
+func (c *startCommand) Handle(command, discordID string, user *models.User, bot *tgbotapi.BotAPI, chatID int64) []tgbotapi.Chattable {
 	if (user.Role == models.UserRoleMember || user.Role == models.UserRoleSeeder) && user.DiscordID != 0 {
 		return []tgbotapi.Chattable{
 			tgbotapi.NewMessage(chatID, "Привет, ты успешно авторизован, можешь возвращаться в Discord"),

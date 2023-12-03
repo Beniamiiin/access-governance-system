@@ -45,7 +45,7 @@ func (c *addCommentCommand) CanHandle(command string) bool {
 	return command == addCommentCommandName
 }
 
-func (c *addCommentCommand) Handle(command, arguments string, user *models.User, chatID int64) []tgbotapi.Chattable {
+func (c *addCommentCommand) Handle(command, arguments string, user *models.User, bot *tgbotapi.BotAPI, chatID int64) []tgbotapi.Chattable {
 	switch user.TelegramState.LastCommandState {
 	case "":
 		return []tgbotapi.Chattable{c.handleAddCommentCommand(command, user, chatID)}

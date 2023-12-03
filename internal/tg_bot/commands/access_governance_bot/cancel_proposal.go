@@ -31,7 +31,7 @@ func (c *cancelProposalCommand) CanHandle(command string) bool {
 	return command == cancelProposalCommandName
 }
 
-func (c *cancelProposalCommand) Handle(text, arguments string, user *models.User, chatID int64) []tgbotapi.Chattable {
+func (c *cancelProposalCommand) Handle(command, arguments string, user *models.User, bot *tgbotapi.BotAPI, chatID int64) []tgbotapi.Chattable {
 	user.TempProposal = models.Proposal{}
 	user.TelegramState = models.TelegramState{}
 	_, err := c.userRepository.Update(user)

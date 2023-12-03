@@ -16,7 +16,6 @@ import (
 const startCommandName = "start"
 
 type startCommand struct {
-	bot            *tgbotapi.BotAPI
 	config         configs.AccessGovernanceBotConfig
 	userRepository repositories.UserRepository
 	logger         *zap.SugaredLogger
@@ -34,7 +33,7 @@ func (c *startCommand) CanHandle(command string) bool {
 	return command == startCommandName
 }
 
-func (c *startCommand) Handle(text, arguments string, user *models.User, chatID int64) []tgbotapi.Chattable {
+func (c *startCommand) Handle(command, arguments string, user *models.User, bot *tgbotapi.BotAPI, chatID int64) []tgbotapi.Chattable {
 	var messages = []tgbotapi.Chattable{}
 
 	parseMode := tgbotapi.ModeMarkdownV2
@@ -54,7 +53,7 @@ func (c *startCommand) Handle(text, arguments string, user *models.User, chatID 
 	messages = append(messages, message)
 
 	if user.Role == models.UserRoleSeeder && user.DiscordID == 0 {
-		message := c.createInstructionMessageForSeeder(chatID)
+		message := c.createInstructionMessageForSeeder(bot, chatID)
 
 		if message == nil {
 			return []tgbotapi.Chattable{tgbot.DefaultErrorMessage(chatID)}
@@ -66,23 +65,14 @@ func (c *startCommand) Handle(text, arguments string, user *models.User, chatID 
 	return messages
 }
 
-func (c *startCommand) createInstructionMessageForSeeder(chatID int64) tgbotapi.Chattable {
-	if c.bot == nil {
-		var err error
-		c.bot, err = tgbotapi.NewBotAPI(c.config.AccessGovernanceBot.Token)
-		if err != nil {
-			c.logger.Fatalf("could not create bot: %v", err)
-			return nil
-		}
-	}
-
-	seedersChatInviteLink, err := c.createSeedersChatInviteLink()
+func (c *startCommand) createInstructionMessageForSeeder(bot *tgbotapi.BotAPI, chatID int64) tgbotapi.Chattable {
+	seedersChatInviteLink, err := tgbot.CreateChatInviteLink(bot, c.config.App.SeedersChatID)
 	if err != nil {
 		c.logger.Fatalf("could not create seeders chat invite link: %v", err)
 		return nil
 	}
 
-	membersChatInviteLink, err := c.createMembersChatInviteLink()
+	membersChatInviteLink, err := tgbot.CreateChatInviteLink(bot, c.config.App.MembersChatID)
 	if err != nil {
 		c.logger.Fatalf("could not create members chat invite link: %v", err)
 		return nil
@@ -103,34 +93,4 @@ func (c *startCommand) createInstructionMessageForSeeder(chatID int64) tgbotapi.
 	message.ParseMode = tgbotapi.ModeMarkdown
 
 	return message
-}
-
-func (c *startCommand) createMembersChatInviteLink() (string, error) {
-	inviteLinkConfig := tgbotapi.ChatInviteLinkConfig{
-		ChatConfig: tgbotapi.ChatConfig{
-			ChatID: c.config.App.MembersChatID,
-		},
-	}
-
-	inviteLink, err := c.bot.GetInviteLink(inviteLinkConfig)
-	if err != nil {
-		return "", err
-	}
-
-	return inviteLink, nil
-}
-
-func (c *startCommand) createSeedersChatInviteLink() (string, error) {
-	inviteLinkConfig := tgbotapi.ChatInviteLinkConfig{
-		ChatConfig: tgbotapi.ChatConfig{
-			ChatID: c.config.App.SeedersChatID,
-		},
-	}
-
-	inviteLink, err := c.bot.GetInviteLink(inviteLinkConfig)
-	if err != nil {
-		return "", err
-	}
-
-	return inviteLink, nil
 }
