@@ -230,7 +230,7 @@ func (h *accessGovernanceBotCommandHandler) handleNewChatMembers(bot *tgbotapi.B
 		if user.Role == models.UserRoleSeeder {
 			seedersChatInviteLink, err := tgbot.CreateChatInviteLink(bot, h.config.App.SeedersChatID)
 			if err != nil {
-				h.logger.Fatalf("could not create seeders chat invite link: %v", err)
+				h.logger.Errorf("could not create seeders chat invite link: %v", err)
 				continue
 			}
 
@@ -242,7 +242,7 @@ func (h *accessGovernanceBotCommandHandler) handleNewChatMembers(bot *tgbotapi.B
 2. Подключиться к нашему discord серверу - %s
 3. Отправить команду %s в чате в discord
 `, newChatMember.FirstName, h.config.App.CommunityName, seedersChatInviteLink, h.config.DiscordInviteLink, "`!authorize`")
-		} else if user.Role == models.UserRoleMember {
+		} else if user.Role == models.UserRoleGuest {
 			messageText = fmt.Sprintf(`
 Привет, %s! Добро пожаловать в сообщество %s.
 

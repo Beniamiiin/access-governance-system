@@ -68,13 +68,13 @@ func (c *startCommand) Handle(command, arguments string, user *models.User, bot 
 func (c *startCommand) createInstructionMessageForSeeder(bot *tgbotapi.BotAPI, chatID int64) tgbotapi.Chattable {
 	seedersChatInviteLink, err := tgbot.CreateChatInviteLink(bot, c.config.App.SeedersChatID)
 	if err != nil {
-		c.logger.Fatalf("could not create seeders chat invite link: %v", err)
+		c.logger.Errorf("could not create seeders chat invite link: %v", err)
 		return nil
 	}
 
 	membersChatInviteLink, err := tgbot.CreateChatInviteLink(bot, c.config.App.MembersChatID)
 	if err != nil {
-		c.logger.Fatalf("could not create members chat invite link: %v", err)
+		c.logger.Errorf("could not create members chat invite link: %v", err)
 		return nil
 	}
 
