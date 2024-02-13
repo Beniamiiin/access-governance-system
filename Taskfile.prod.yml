@@ -41,7 +41,10 @@ tasks:
   create-network:
     desc: Create access governance system network
     cmds:
-      - docker network create {{.NETWORK_NAME}}
+      - |
+        if ! docker network inspect {{.NETWORK_NAME}} >/dev/null 2>&1; then
+          docker network create {{.NETWORK_NAME}}
+        fi
 
   # Access Governance Bot
 
