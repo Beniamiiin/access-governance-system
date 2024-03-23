@@ -69,7 +69,7 @@ func authorization(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	tgBotLink := fmt.Sprintf("https://t.me/S16AuthorizationBot?start=%s", m.Author.ID)
-	message := fmt.Sprintf("Привет, для авторизации в сообществе %s перейди по ссылке %s", config.App.CommunityName, tgBotLink)
+	message := fmt.Sprintf("Привет, для авторизации в сообществе Shmit16 перейди по ссылке %s", tgBotLink)
 
 	channel, err := s.UserChannelCreate(m.Author.ID)
 	if err != nil {

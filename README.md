@@ -12,11 +12,9 @@
 | Environment Variable                       | Description                                                                                                   | Required |
 |--------------------------------------------|---------------------------------------------------------------------------------------------------------------|----------|
 | `ENVIRONMENT`                              | Specifies the environment in which your application is running (development, production).            | Yes   |
-| `COMMUNITY_NAME`                           | The name of the community that this instance of the application is serving.                                   | Yes   |
 | `LOKI_URL`                                 | The URL of a Loki instance for logging.                                                                       | No   |
 | `VOTING_DURATION_DAYS`                     | The duration of voting events in your application, in days.                                                   | Yes   |
 | `INITIAL_SEEDERS`                          | A comma-separated list of telegram usernames who are initial seeders, likely having special roles or permissions.                 | No   |
-| `RENOMINATION_PERIOD_DAYS`                 | Defines the period in days during which the same individual cannot be re-nominated for voting.                                            | Yes   |
 | `TELEGRAM_MEMBERS_CHAT_ID`                          | The ID of a chat in Telegram where members are present.                                                       | Yes   |
 | `DB_PASSWORD`                              | The password used to connect to your PostgreSQL database.                                                     | Yes   |
 | `DB_URL`                                   | The connection string for your PostgreSQL database.                                                           | Yes   |

@@ -95,6 +95,10 @@ func (s *service) GetVotes(pollID int) ([]Vote, error) {
 		return nil, err
 	}
 
+	if response.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("unexpected status code: %d", response.StatusCode)
+	}
+
 	responseData := make([]Vote, 0)
 	if err := json.Unmarshal(responseBody, &responseData); err != nil {
 		return nil, err

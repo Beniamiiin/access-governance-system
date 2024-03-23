@@ -1,10 +1,5 @@
 package models
 
-import (
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
-)
-
 type UserRole string
 
 const (
@@ -20,10 +15,6 @@ type TelegramState struct {
 
 func (r UserRole) String() string {
 	return string(r)
-}
-
-func (r UserRole) CapitalizedString() string {
-	return cases.Title(language.English).String(r.String())
 }
 
 type User struct {

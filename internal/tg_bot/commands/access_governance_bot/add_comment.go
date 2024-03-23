@@ -80,7 +80,8 @@ func (c *addCommentCommand) handleAddCommentCommand(command string, user *models
 	user.TelegramState.LastCommandState = waitingForCommentState
 	_ = c.updateUser(user)
 
-	return tgbotapi.NewMessage(chatID, "Введите комментарий")
+	text := fmt.Sprintf("Введи комментарий, почему ты считаешь, что %s (@%s) стоит добавить. Чем подробнее, тем лучше мы сможем понять твою точку зрения.", proposal.NomineeName, proposal.NomineeTelegramNickname)
+	return tgbotapi.NewMessage(chatID, text)
 }
 
 func (c *addCommentCommand) handleWaitingForCommentState(comment string, user *models.User, chatID int64) tgbotapi.Chattable {
@@ -104,7 +105,7 @@ func (c *addCommentCommand) handleWaitingForCommentState(comment string, user *m
 	user.TelegramState = models.TelegramState{}
 	_ = c.updateUser(user)
 
-	return tgbotapi.NewMessage(chatID, "Спасибо, ваш комментарий отправлен")
+	return tgbotapi.NewMessage(chatID, "Спасибо, твой комментарий добавлен к заявке.")
 }
 
 func (c *addCommentCommand) updateUser(user *models.User) error {

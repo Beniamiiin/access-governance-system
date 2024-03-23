@@ -57,22 +57,32 @@ func (c *pendingProposalsCommand) Handle(command, arguments string, user *models
 		messageText += fmt.Sprintf("Дата начала: %s\n", internal.Format(proposal.CreatedAt))
 		messageText += fmt.Sprintf("Дата окончания: %s\n", internal.Format(proposal.FinishedAt))
 
-		message := tgbotapi.NewMessage(chatID, messageText)
+		var message tgbotapi.MessageConfig
 
 		switch user.Role {
+		case models.UserRoleMember:
+			if proposal.NominatorID != user.ID {
+				messageText += fmt.Sprintf(
+					"\n%s",
+					"Если ты тоже считаешь, что этот человек должен скорее стать частью сообщества, нажми на кнопку *Оставить комментарий* и сформулируй — почему ты так считаешь? Дополнительные мнения помогают в процессе отбора.",
+				)
+			}
+
+			message = tgbotapi.NewMessage(chatID, messageText)
+			message.ParseMode = tgbotapi.ModeMarkdown
+			message.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(
+				tgbotapi.NewInlineKeyboardRow(
+					tgbotapi.NewInlineKeyboardButtonData("Оставить комментарий", fmt.Sprintf("add_comment:%d", proposal.ID)),
+				),
+			)
 		case models.UserRoleSeeder:
 			pollChatID := strings.TrimPrefix(strconv.Itoa(proposal.Poll.ChatID), "-100")
 
+			message = tgbotapi.NewMessage(chatID, messageText)
 			message.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(
 				tgbotapi.NewInlineKeyboardRow(
 					tgbotapi.NewInlineKeyboardButtonURL("Проголосовать", fmt.Sprintf("https://t.me/c/%s/%d", pollChatID, proposal.Poll.PollMessageID)),
 					tgbotapi.NewInlineKeyboardButtonURL("Обсудить", fmt.Sprintf("https://t.me/c/%s/%d", pollChatID, proposal.Poll.DiscussionMessageID)),
-				),
-			)
-		case models.UserRoleMember:
-			message.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(
-				tgbotapi.NewInlineKeyboardRow(
-					tgbotapi.NewInlineKeyboardButtonData("Оставить комментарий", fmt.Sprintf("add_comment:%d", proposal.ID)),
 				),
 			)
 		}

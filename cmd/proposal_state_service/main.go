@@ -8,10 +8,10 @@ import (
 	"access_governance_system/internal/di"
 	"access_governance_system/internal/services"
 	"fmt"
+	"github.com/go-co-op/gocron"
 	"math"
 	"time"
 
-	"github.com/go-co-op/gocron"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"go.uber.org/zap"
 )
@@ -83,17 +83,13 @@ func getProposalsNeedToBeUpdated(
 	var proposalsNeedToBeUpdated []*models.Proposal
 
 	for _, proposal := range proposals {
-		if !compareDatesWithoutTime(proposal.FinishedAt, time.Now()) {
+		if proposal.FinishedAt.After(time.Now()) {
 			continue
 		}
 
 		votes, err := voteService.GetVotes(proposal.Poll.ID)
 		if err != nil {
 			logger.Errorw("failed to get votes", "error", err)
-			continue
-		}
-
-		if len(votes) == 0 {
 			continue
 		}
 
@@ -128,7 +124,7 @@ func calculateYesAndNoVotes(votes []services.Vote, yesVotesToOvercomeNo float64)
 }
 
 func getVotedUsers(votes []services.Vote, userRepository repositories.UserRepository, logger *zap.SugaredLogger) []*models.User {
-	votedUsers := []*models.User{}
+	var votedUsers []*models.User
 
 	for _, vote := range votes {
 		user, err := userRepository.GetOneByTelegramID(vote.UserID)
@@ -147,7 +143,7 @@ func getVotedUsers(votes []services.Vote, userRepository repositories.UserReposi
 }
 
 func getVotedSeeders(users []*models.User) []*models.User {
-	votedSeeders := []*models.User{}
+	var votedSeeders []*models.User
 
 	for _, user := range users {
 		if user.Role == models.UserRoleSeeder {
@@ -167,14 +163,16 @@ func updateProposalStatus(
 	noVotes int,
 	config configs.ProposalStateServiceConfig,
 ) {
-	proposal.Status = models.ProposalStatusApproved
-
 	minRequiredYesVotes := int(math.Round(float64(len(votes)) * config.MinYesPercentage))
 
-	if len(votedSeeders) < minRequiredSeedersCount {
+	if len(votes) == 0 {
+		proposal.Status = models.ProposalStatusRejected
+	} else if len(votedSeeders) < minRequiredSeedersCount {
 		proposal.Status = models.ProposalStatusNoQuorum
 	} else if yesVotes < minRequiredYesVotes || noVotes > 0 {
 		proposal.Status = models.ProposalStatusRejected
+	} else {
+		proposal.Status = models.ProposalStatusApproved
 	}
 }
 
@@ -189,36 +187,37 @@ func updateProposals(
 
 	for _, proposal := range proposals {
 		_, err := proposalRepository.Update(proposal)
-
 		if err != nil {
 			logger.Errorw("failed to update proposal", "error", err)
 			continue
 		}
 
-		votes, err := voteService.GetVotes(proposal.Poll.ID)
-		if err != nil {
-			logger.Errorw("failed to get votes", "error", err)
-			continue
-		}
-
-		backersIDs := make([]int64, 0)
-		for _, vote := range votes {
-			if vote.Option == "yes" {
-				backersIDs = append(backersIDs, vote.UserID)
+		if proposal.Status == models.ProposalStatusApproved {
+			votes, err := voteService.GetVotes(proposal.Poll.ID)
+			if err != nil {
+				logger.Errorw("failed to get votes", "error", err)
+				continue
 			}
-		}
 
-		user := &models.User{
-			Name:             proposal.NomineeName,
-			TelegramNickname: proposal.NomineeTelegramNickname,
-			Role:             models.UserRoleGuest,
-			BackersID:        backersIDs,
-		}
+			backersIDs := make([]int64, 0)
+			for _, vote := range votes {
+				if vote.Option == "yes" {
+					backersIDs = append(backersIDs, vote.UserID)
+				}
+			}
 
-		_, err = userRepository.Create(user)
-		if err != nil {
-			logger.Errorw("failed to create user", "error", err)
-			continue
+			user := &models.User{
+				Name:             proposal.NomineeName,
+				TelegramNickname: proposal.NomineeTelegramNickname,
+				Role:             models.UserRoleGuest,
+				BackersID:        backersIDs,
+			}
+
+			_, err = userRepository.Create(user)
+			if err != nil {
+				logger.Errorw("failed to create user", "error", err)
+				continue
+			}
 		}
 
 		updatedProposals = append(updatedProposals, proposal)
@@ -239,7 +238,7 @@ func sendNotifications(
 	case models.ProposalStatusApproved:
 		sendNotificationsIfProposalApproved(proposal, userRepository, config, logger)
 	case models.ProposalStatusNoQuorum:
-		sendNotificationsIfProposalNoQuourum(proposal, userRepository, config, logger)
+		sendNotificationsIfProposalNoQuorum(proposal, userRepository, config, logger)
 	}
 }
 
@@ -251,12 +250,12 @@ func sendNotificationsIfProposalRejected(
 ) {
 	nominator, err := userRepository.GetOneByID(proposal.NominatorID)
 	if err != nil {
-		logger.Fatalf("could not get nominator: %v", err)
+		logger.Errorw("could not get nominator", "error", err)
 	}
 
 	bot, err := tgbotapi.NewBotAPI(config.AccessGovernanceBot.Token)
 	if err != nil {
-		logger.Fatalf("could not create bot: %v", err)
+		logger.Errorw("could not create bot", "error", err)
 	}
 
 	messages := []tgbotapi.MessageConfig{
@@ -267,19 +266,28 @@ func sendNotificationsIfProposalRejected(
 	for _, message := range messages {
 		_, err = bot.Send(message)
 		if err != nil {
-			logger.Fatalf("could not send message: %v", err)
+			logger.Errorw("could not send message", "error", err)
 		}
 	}
 }
 
 func messageForProposalRejectedToNominator(proposal *models.Proposal, nominator *models.User) tgbotapi.MessageConfig {
-	text := fmt.Sprintf("Кандидатура %s (@%s) была отклонена.", proposal.NomineeName, proposal.NomineeTelegramNickname)
-	message := tgbotapi.NewMessage(int64(nominator.TelegramID), text)
+	text := fmt.Sprintf(
+		`
+Кандидатура %s (@%s) была отклонена.
+
+_Это значит, что кворум не состоялся. Голосование по заявкам проходит анонимно в закрытой группе из активных участников сообщества, которые являются носителями ДНК. Повторную заявку на добавление этого человека можно отправить через 3 месяца._ 
+`,
+		proposal.NomineeName,
+		proposal.NomineeTelegramNickname,
+	)
+	message := tgbotapi.NewMessage(nominator.TelegramID, text)
+	message.ParseMode = tgbotapi.ModeMarkdown
 	return message
 }
 
 func messageForProposalRejectedToSeedersGroup(proposal *models.Proposal) tgbotapi.MessageConfig {
-	text := fmt.Sprintf("Кандидатура %s (@%s) была отклонена.", proposal.NomineeName, proposal.NomineeTelegramNickname)
+	text := fmt.Sprintf("Кандидатура %s (@%s) была отклонена. Повторная заявка может быть создана через 3 месяца.", proposal.NomineeName, proposal.NomineeTelegramNickname)
 	message := tgbotapi.NewMessage(int64(proposal.Poll.ChatID), text)
 	message.BaseChat.ReplyToMessageID = proposal.Poll.PollMessageID
 	return message
@@ -293,12 +301,12 @@ func sendNotificationsIfProposalApproved(
 ) {
 	nominator, err := userRepository.GetOneByID(proposal.NominatorID)
 	if err != nil {
-		logger.Fatalf("could not get nominator: %v", err)
+		logger.Errorw("could not get nominator", "error", err)
 	}
 
 	bot, err := tgbotapi.NewBotAPI(config.AccessGovernanceBot.Token)
 	if err != nil {
-		logger.Fatalf("could not create bot: %v", err)
+		logger.Errorw("could not create bot", "error", err)
 	}
 
 	inviteLinkConfig := tgbotapi.ChatInviteLinkConfig{
@@ -308,29 +316,48 @@ func sendNotificationsIfProposalApproved(
 	}
 	inviteLink, err := bot.GetInviteLink(inviteLinkConfig)
 	if err != nil {
-		logger.Fatalf("could not get invite link: %v", err)
+		logger.Errorw("could not get invite link", "error", err)
 	}
 
-	messages := []tgbotapi.MessageConfig{
-		messageForProposalApprovedToNominator(proposal, nominator, inviteLink),
-	}
+	messages := messagesForProposalApprovedToNominator(proposal, nominator, inviteLink)
 
 	for _, message := range messages {
 		_, err = bot.Send(message)
 		if err != nil {
-			logger.Fatalf("could not send message: %v", err)
+			logger.Errorw("could not send message", "error", err)
 		}
 	}
 }
 
-func messageForProposalApprovedToNominator(proposal *models.Proposal, nominator *models.User, inviteLink string) tgbotapi.MessageConfig {
-	text := fmt.Sprintf("Кандидатура %s (@%s) была принята. Отправь ссылку(%s) кандидату, чтобы он зашел в группу. ", proposal.NomineeName, proposal.NomineeTelegramNickname, inviteLink)
-	message := tgbotapi.NewMessage(int64(nominator.TelegramID), text)
-	message.DisableWebPagePreview = true
-	return message
+func messagesForProposalApprovedToNominator(proposal *models.Proposal, nominator *models.User, inviteLink string) []tgbotapi.MessageConfig {
+	return []tgbotapi.MessageConfig{
+		func() tgbotapi.MessageConfig {
+			text := fmt.Sprintf(`
+Кандидатура %s (@%s) была принята.
+
+Перешли ему следующее сообщение:
+`, proposal.NomineeName, proposal.NomineeTelegramNickname)
+			message := tgbotapi.NewMessage(nominator.TelegramID, text)
+			message.DisableWebPagePreview = true
+			return message
+		}(),
+		func() tgbotapi.MessageConfig {
+			text := fmt.Sprintf(`
+Привет! Хочу тебя пригласить вступить в группу Shmit16. Я являюсь участником этого сообщества, и мне удалось получить одобрение на твое вступление. 
+
+Для того, чтобы войти в группу, перейди по [ссылке](%s) и нажми кнопку "Присоединиться".
+
+_Комьюнити Shmit16 выросло из группы IT-предпринимателей, которые собирались на бизнес-вечера по адресу Шмитовский проезд, 16. Спустя 10 лет сообщество насчитывает сотни людей разных специальностей по всему миру. Участие в сообществе бесплатное. Вступая в чат, тебе открывается доступ к мероприятиям и дискуссиям сообщества — фестивали, ретриты, онлайн и офлайн._ 
+`, inviteLink)
+			message := tgbotapi.NewMessage(nominator.TelegramID, text)
+			message.ParseMode = tgbotapi.ModeMarkdown
+			message.DisableWebPagePreview = true
+			return message
+		}(),
+	}
 }
 
-func sendNotificationsIfProposalNoQuourum(
+func sendNotificationsIfProposalNoQuorum(
 	proposal *models.Proposal,
 	userRepository repositories.UserRepository,
 	config configs.ProposalStateServiceConfig,
@@ -338,40 +365,36 @@ func sendNotificationsIfProposalNoQuourum(
 ) {
 	nominator, err := userRepository.GetOneByID(proposal.NominatorID)
 	if err != nil {
-		logger.Fatalf("could not get nominator: %v", err)
+		logger.Errorw("could not get nominator", "error", err)
 	}
 
 	bot, err := tgbotapi.NewBotAPI(config.AccessGovernanceBot.Token)
 	if err != nil {
-		logger.Fatalf("could not create bot: %v", err)
+		logger.Errorw("could not create bot", "error", err)
 	}
 
 	messages := []tgbotapi.MessageConfig{
-		messageForProposalNoQuourumToNominator(proposal, nominator),
-		messageForProposalNoQuourumToSeedersGroup(proposal),
+		messageForProposalNoQuorumToNominator(proposal, nominator),
+		messageForProposalNoQuorumToSeedersGroup(proposal),
 	}
 
 	for _, message := range messages {
 		_, err = bot.Send(message)
 		if err != nil {
-			logger.Fatalf("could not send message: %v", err)
+			logger.Errorw("could not send message", "error", err)
 		}
 	}
 }
 
-func messageForProposalNoQuourumToNominator(proposal *models.Proposal, nominator *models.User) tgbotapi.MessageConfig {
+func messageForProposalNoQuorumToNominator(proposal *models.Proposal, nominator *models.User) tgbotapi.MessageConfig {
 	text := fmt.Sprintf("Кандидатура %s (@%s) была отклонена по причине отсутствия кворума.", proposal.NomineeName, proposal.NomineeTelegramNickname)
 	message := tgbotapi.NewMessage(int64(nominator.TelegramID), text)
 	return message
 }
 
-func messageForProposalNoQuourumToSeedersGroup(proposal *models.Proposal) tgbotapi.MessageConfig {
+func messageForProposalNoQuorumToSeedersGroup(proposal *models.Proposal) tgbotapi.MessageConfig {
 	text := fmt.Sprintf("Кандидатура %s (@%s) была отклонена по причине отсутствия кворума.", proposal.NomineeName, proposal.NomineeTelegramNickname)
 	message := tgbotapi.NewMessage(int64(proposal.Poll.ChatID), text)
 	message.BaseChat.ReplyToMessageID = proposal.Poll.PollMessageID
 	return message
-}
-
-func compareDatesWithoutTime(date1 time.Time, date2 time.Time) bool {
-	return date1.Year() == date2.Year() && date1.Month() == date2.Month() && date1.Day() == date2.Day()
 }

@@ -14,7 +14,7 @@ tasks:
       - access-governance-bot-up
       - vote-bot-up
       - vote-bot-api-up
-      - authorization-bot-up
+#      - authorization-bot-up
       - proposal-state-service-up
 
   down:
@@ -23,7 +23,7 @@ tasks:
       - access-governance-bot-down
       - vote-bot-down
       - vote-bot-api-down
-      - authorization-bot-down
+#      - authorization-bot-down
       - proposal-state-service-down
     cmds:
       - docker network rm {{.NETWORK_NAME}}

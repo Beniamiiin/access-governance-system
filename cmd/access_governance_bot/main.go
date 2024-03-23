@@ -48,7 +48,7 @@ func main() {
 	voteService := services.NewVoteService(config.VoteAPI.URL)
 
 	tgbot.NewBot(
-		agbhandlers.NewAccessGovernanceBotCommandHandler(config, userRepository, logger,
+		agbhandlers.NewAccessGovernanceBotCommandHandler(config, userRepository, proposalRepository, logger,
 			[]commands.Command{
 				agbcommands.NewStartCommand(config, userRepository, logger),
 				agbcommands.NewCancelProposalCommand(config.App, userRepository, logger),

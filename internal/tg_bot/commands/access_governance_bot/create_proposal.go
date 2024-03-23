@@ -26,8 +26,8 @@ const (
 )
 
 var (
-	proposalTypeMember = models.UserRoleMember.CapitalizedString()
-	proposalTypeSeeder = models.UserRoleSeeder.CapitalizedString()
+	proposalTypeMember = models.UserRoleMember.String()
+	proposalTypeSeeder = models.UserRoleSeeder.String()
 
 	confirmYes = "Да"
 	confirmNo  = "Нет, начать заново"
@@ -82,22 +82,18 @@ func (c *createProposalCommand) Handle(command, arguments string, user *models.U
 		case waitingForConfirmState:
 			message = c.handleWaitingForConfirmState(command, user, chatID)
 
-			bot, err := tgbotapi.NewBotAPI(c.config.AccessGovernanceBot.Token)
-			if err != nil {
-				c.logger.Errorw("could not create bot", "error", err)
+			if command == confirmYes {
+				text := fmt.Sprintf("@%s предлагает добавить @%s в сообщество", user.TelegramNickname, user.TempProposal.NomineeTelegramNickname)
+
+				_, err := bot.Send(tgbotapi.NewMessage(c.config.App.MembersChatID, text))
+				if err != nil {
+					c.logger.Errorw("could not send message", "error", err)
+				}
+
+				user.TempProposal = models.Proposal{}
+				user.TelegramState = models.TelegramState{}
+				_ = c.updateUser(user)
 			}
-
-			text := fmt.Sprintf("@%s предлагает добавить @%s в сообщество", user.TelegramNickname, user.TempProposal.NomineeTelegramNickname)
-			message := tgbotapi.NewMessage(c.config.App.MembersChatID, text)
-
-			_, err = bot.Send(message)
-			if err != nil {
-				c.logger.Errorw("could not send message", "error", err)
-			}
-
-			user.TempProposal = models.Proposal{}
-			user.TelegramState = models.TelegramState{}
-			_ = c.updateUser(user)
 		default:
 			c.logger.Errorw("user has unknown state", "error", user.TelegramState.LastCommandState)
 			message = tgbot.DefaultErrorMessage(chatID)
@@ -112,14 +108,10 @@ func (c *createProposalCommand) handleCreateProposalCommand(user *models.User, c
 
 	switch user.Role {
 	case models.UserRoleMember:
-		return c.handleWaitingForTypeState(models.UserRoleMember.CapitalizedString(), user, chatID)
+		return c.handleWaitingForTypeState(models.UserRoleMember.String(), user, chatID)
 	case models.UserRoleSeeder:
-		parseMode := tgbotapi.ModeMarkdownV2
-		messageText := tgbotapi.EscapeText(parseMode, "Кого ты хочешь добавить - member или seeder?")
-		messageText = strings.Replace(messageText, "member", "*member*", -1)
-		messageText = strings.Replace(messageText, "seeder", "*seeder*", -1)
-		message := tgbotapi.NewMessage(chatID, messageText)
-		message.ParseMode = parseMode
+		message := tgbotapi.NewMessage(chatID, "Кого ты хочешь добавить — *member* или *seeder*?")
+		message.ParseMode = tgbotapi.ModeMarkdown
 		message.ReplyMarkup = tgbotapi.NewOneTimeReplyKeyboard(
 			tgbotapi.NewKeyboardButtonRow(
 				tgbotapi.NewKeyboardButton(proposalTypeMember),
@@ -138,9 +130,11 @@ func (c *createProposalCommand) handleCreateProposalCommand(user *models.User, c
 }
 
 func (c *createProposalCommand) handleWaitingForTypeState(proposalNomineeType string, user *models.User, chatID int64) tgbotapi.Chattable {
-	message := tgbotapi.NewMessage(chatID, "Окей, теперь напиши никнейм пользователя в telegram, которого ты хочешь добавить в сообщество.")
+	text := "Напиши никнейм пользователя в telegram, которого ты хочешь добавить в сообщество. " +
+		"Если у пользователя нет никнейма, то попроси его создать, так как без него мы не сможем добавить его в сообщество."
+	message := tgbotapi.NewMessage(chatID, text)
 
-	switch proposalNomineeType {
+	switch strings.ToLower(proposalNomineeType) {
 	case proposalTypeMember:
 		user.TempProposal.NomineeRole = models.NomineeRoleMember
 	case proposalTypeSeeder:
@@ -184,16 +178,17 @@ func (c *createProposalCommand) handleWaitingForNicknameState(proposalNomineeNic
 			)
 			return tgbotapi.NewMessage(chatID, "Этот участник уже состоит в сообществе.")
 		case models.ProposalStatusRejected:
-			monthsAgo := time.Now().AddDate(0, 0, -c.config.App.RenominationPeriodDays)
-
-			if !lastProposal.CreatedAt.Before(monthsAgo) {
+			if !lastProposal.CreatedAt.Before(time.Now().AddDate(0, -3, 0)) {
 				c.logger.Warnf(
 					"user tried to create proposal for nominee with existing rejected proposal: %s, %d, %s",
 					proposalNomineeNickname,
 					lastProposal.ID,
 					lastProposal.CreatedAt,
 				)
-				return tgbotapi.NewMessage(chatID, "Предыдущее предложение на добавление этого участника в сообщество было отклонено менее 3 месяцев назад. Участник может быть предложен к добавлению не чаще, чем раз в 3 месяца.")
+
+				text := "Предыдущее предложение на добавление этого участника в сообщество было отклонено менее 3-х месяцев назад. " +
+					"Участник может быть предложен к добавлению не чаще, чем один раз в три месяца."
+				return tgbotapi.NewMessage(chatID, text)
 			}
 		}
 	}
@@ -210,12 +205,13 @@ func (c *createProposalCommand) handleWaitingForNicknameState(proposalNomineeNic
 		return tgbotapi.NewMessage(chatID, "Этот участник уже состоит в сообществе.")
 	}
 
-	text := fmt.Sprintf(
-		"Перед тем, как мы перейдем к следующему шагу, тебе нужно убедиться правильно ли ты ввел никнейм пользователя. "+
-			"Для это просто нажми на него @%s (если на него нельзя нажать, то похоже ты ввел несуществующий никнейм).\n\n"+
-			"Если вдруг ты ошибся, то ты всегда можешь начать сначала вызвав команду /cancel_proposal.\n\n"+
-			"Напиши ФИО человека, которого ты хочешь добавить.", proposalNomineeNickname,
-	)
+	text := fmt.Sprintf(`
+Проверь, что ты правильно написал никнейм пользователя: @%s.
+
+Если все корректно, то напиши имя и фамилию человека, которого ты хочешь добавить.
+
+Ты всегда можешь начать сначала, вызвав команду /cancel_proposal.
+`, proposalNomineeNickname)
 	message := tgbotapi.NewMessage(chatID, text)
 
 	user.TempProposal.NomineeTelegramNickname = proposalNomineeNickname
@@ -227,7 +223,17 @@ func (c *createProposalCommand) handleWaitingForNicknameState(proposalNomineeNic
 }
 
 func (c *createProposalCommand) handleWaitingForNameState(proposalNomineeName string, user *models.User, chatID int64) tgbotapi.Chattable {
-	message := tgbotapi.NewMessage(chatID, "Теперь напиши, почему ты считаешь, что этого участника стоит добавить. Чем подробнее, тем лучше мы сможем понять твою точку зрения.")
+	message := tgbotapi.NewMessage(
+		chatID,
+		`Теперь напиши, почему ты считаешь, что этого человека стоит добавить в сообщество? Чем подробнее описание, тем легче будет принято решение.
+
+_В Shmit16 нет чеклиста и нет простого ответа на вопрос, кем надо быть или что надо сделать, чтобы к нам попасть. Должно сложиться так, что участники сообщества чувствуют удовольствие от общения с новым человеком и органически хотят проводить время вместе. Сообщество выросло из группы IT-предпринимателей, и за 10 лет стало шире проф ролей и приветствует любые проявления.
+
+Важно: у нас не предусмотрен механизм исключения из сообщества, поэтому каждый, кого мы добавляем — заходит к нам в дом. 
+
+Оформляя заявку, ты приглашаешь человека быть с тобой на фестивалях, в путешествиях, на ретритах и у тебя в гостях. Представь этого человека на наших мероприятиях и реши, будет ли классно ему с нами, и нам — с ним._`,
+	)
+	message.ParseMode = tgbotapi.ModeMarkdown
 
 	user.TempProposal.NomineeName = proposalNomineeName
 
@@ -240,19 +246,24 @@ func (c *createProposalCommand) handleWaitingForNameState(proposalNomineeName st
 func (c *createProposalCommand) handleWaitingForReasonState(proposalDescription string, user *models.User, chatID int64) tgbotapi.Chattable {
 	user.TempProposal.Comment = proposalDescription
 
-	messageText := ""
-	messageText += fmt.Sprintf("Тип: %s\n", user.TempProposal.NomineeRole)
-	messageText += fmt.Sprintf("Участник: %s (@%s)\n", user.TempProposal.NomineeName, user.TempProposal.NomineeTelegramNickname)
-	messageText += fmt.Sprintf("Причина: %s\n", user.TempProposal.Comment)
-	messageText += fmt.Sprintln()
-	messageText += "Все правильно, отправляем предложение на голосование?"
-	message := tgbotapi.NewMessage(chatID, messageText)
+	text := fmt.Sprintf(`
+Тип: *%s*
+Участник: *%s (@%s)*
+Комментарий: *%s*
+
+Все правильно, отправляем предложение на голосование?
+
+_Голосование проходит анонимно в группе из текущих активных участников (сидеры), которые являются носителями ДНК Shmit16. Решение будет принято в течение недели._
+`, user.TempProposal.NomineeRole, user.TempProposal.NomineeName, user.TempProposal.NomineeTelegramNickname, user.TempProposal.Comment)
+
+	message := tgbotapi.NewMessage(chatID, text)
 	message.ReplyMarkup = tgbotapi.NewOneTimeReplyKeyboard(
 		tgbotapi.NewKeyboardButtonRow(
 			tgbotapi.NewKeyboardButton(confirmYes),
 			tgbotapi.NewKeyboardButton(confirmNo),
 		),
 	)
+	message.ParseMode = tgbotapi.ModeMarkdown
 
 	user.TelegramState.LastCommandState = waitingForConfirmState
 	_ = c.updateUser(user)

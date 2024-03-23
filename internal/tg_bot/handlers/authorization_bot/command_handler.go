@@ -7,8 +7,6 @@ import (
 	"access_governance_system/internal/tg_bot/commands"
 	"access_governance_system/internal/tg_bot/extension"
 	"access_governance_system/internal/tg_bot/handlers"
-	"fmt"
-
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"go.uber.org/zap"
 )
@@ -53,9 +51,14 @@ func (h *authorizationBotCommandHandler) Handle(bot *tgbotapi.BotAPI, update tgb
 		return []tgbotapi.Chattable{extension.DefaultErrorMessage(chatID)}
 	} else if user == nil {
 		h.logger.Warnw("failed to get user", "error", err)
-		return []tgbotapi.Chattable{
-			tgbotapi.NewMessage(chatID, fmt.Sprintf("Привет! К сожалению, ты не участник сообщества %s.", h.appConfig.CommunityName)),
-		}
+
+		text := `
+Привет! К сожалению, ты не участник сообщества Shmit16.
+
+Рекомендуем тебе подписаться на наш канал в телеграме https://t.me/Shmit16 и следить за открытыми мероприятиями и обучением, которые организуем мы или наши друзья. У нас закрытое сообщество по приглашениям. Верный способ стать к нам ближе — знакомиться и дружить с текущими участниками сообщества, включаться в наши открытые инициативы, ретриты и дискуссии.
+`
+
+		return []tgbotapi.Chattable{tgbotapi.NewMessage(chatID, text)}
 	}
 
 	if message != nil {

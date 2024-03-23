@@ -7,8 +7,6 @@ import (
 	"access_governance_system/internal/tg_bot/commands"
 	tgbot "access_governance_system/internal/tg_bot/extension"
 	"fmt"
-	"strings"
-
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"go.uber.org/zap"
 )
@@ -21,7 +19,11 @@ type startCommand struct {
 	logger         *zap.SugaredLogger
 }
 
-func NewStartCommand(config configs.AccessGovernanceBotConfig, userRepository repositories.UserRepository, logger *zap.SugaredLogger) commands.Command {
+func NewStartCommand(
+	config configs.AccessGovernanceBotConfig,
+	userRepository repositories.UserRepository,
+	logger *zap.SugaredLogger,
+) commands.Command {
 	return &startCommand{
 		config:         config,
 		userRepository: userRepository,
@@ -34,23 +36,16 @@ func (c *startCommand) CanHandle(command string) bool {
 }
 
 func (c *startCommand) Handle(command, arguments string, user *models.User, bot *tgbotapi.BotAPI, chatID int64) []tgbotapi.Chattable {
-	var messages = []tgbotapi.Chattable{}
+	var messages []tgbotapi.Chattable
 
-	parseMode := tgbotapi.ModeMarkdownV2
+	text := `
+Привет! Я — бот Shmit16 и я помогаю в создании единого чата сообщества Shmit16.
 
-	messageText := tgbotapi.EscapeText(parseMode, fmt.Sprintf(`
-Привет! Я - бот %s, и вот что я могу предложить:
-
-/create_proposal - с помощью данной команды, ты можешь создать новое предложение о добавлении нового участника в сообщество.
-/pending_proposals - с помощью данной команды, ты можешь посмотреть все предложения, который находятся в данный момент на голосовании.
-/approved_proposals - с помощью данной команды, ты можешь посмотреть все принятые/отклоненные предложения.
-
-Для более подробного изучения всех доступных команд, нажми на кнопку Menu.
-`, c.config.App.CommunityName))
-	messageText = strings.Replace(messageText, "Menu", "*Menu*", -1)
-	message := tgbotapi.NewMessage(chatID, messageText)
-	message.ParseMode = parseMode
-	messages = append(messages, message)
+Вот что я умею:
+1. /create_proposal — с помощью данной команды, ты можешь создать пригласить нового участника в сообщество.
+2. /pending_proposals — с помощью данной команды, ты можешь посмотреть все предложения, которые отправлены на голосование.
+`
+	messages = append(messages, tgbotapi.NewMessage(chatID, text))
 
 	if user.Role == models.UserRoleSeeder && user.DiscordID == 0 {
 		message := c.createInstructionMessageForSeeder(bot, chatID)
@@ -79,18 +74,13 @@ func (c *startCommand) createInstructionMessageForSeeder(bot *tgbotapi.BotAPI, c
 	}
 
 	messageText := fmt.Sprintf(`
-Я заметил, что ты являешься сидером, но ты еще не полностью авторизован в нашем сообществе.
-
-Для того, чтобы авторизоваться тебе надо:
-1. Вступить в нашу группу для seeders - %s
-2. Вступить в нашу группу для members - %s
-3. Подключиться к нашему discord серверу - %s
-4. Отправить команду %s в чате в discord
-`, seedersChatInviteLink, membersChatInviteLink, c.config.DiscordInviteLink, "`!authorize`")
+Обязательно убедись, что ты вступил в наши группы:
+1. Вступить в группу для members — %s
+2. Вступить в группу для seeders — %s
+`, membersChatInviteLink, seedersChatInviteLink)
 
 	message := tgbotapi.NewMessage(chatID, messageText)
 	message.DisableWebPagePreview = true
-	message.ParseMode = tgbotapi.ModeMarkdown
 
 	return message
 }
