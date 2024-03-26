@@ -112,10 +112,10 @@ func (c *createProposalCommand) handleCreateProposalCommand(user *models.User, c
 	case models.UserRoleSeeder:
 		message := tgbotapi.NewMessage(chatID, "Кого ты хочешь добавить — *member* или *seeder*?")
 		message.ParseMode = tgbotapi.ModeMarkdown
-		message.ReplyMarkup = tgbotapi.NewOneTimeReplyKeyboard(
-			tgbotapi.NewKeyboardButtonRow(
-				tgbotapi.NewKeyboardButton(proposalTypeMember),
-				tgbotapi.NewKeyboardButton(proposalTypeSeeder),
+		message.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(
+			tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData(proposalTypeMember, proposalTypeMember),
+				tgbotapi.NewInlineKeyboardButtonData(proposalTypeSeeder, proposalTypeSeeder),
 			),
 		)
 
@@ -130,7 +130,7 @@ func (c *createProposalCommand) handleCreateProposalCommand(user *models.User, c
 }
 
 func (c *createProposalCommand) handleWaitingForTypeState(proposalNomineeType string, user *models.User, chatID int64) tgbotapi.Chattable {
-	text := "Напиши никнейм пользователя в telegram, которого ты хочешь добавить в сообщество. " +
+	text := "Напиши никнейм пользователя в telegram в формате @nickname, которого ты хочешь добавить в сообщество. " +
 		"Если у пользователя нет никнейма, то попроси его создать, так как без него мы не сможем добавить его в сообщество."
 	message := tgbotapi.NewMessage(chatID, text)
 
@@ -257,10 +257,10 @@ _Голосование проходит анонимно в группе из �
 `, user.TempProposal.NomineeRole, user.TempProposal.NomineeName, user.TempProposal.NomineeTelegramNickname, user.TempProposal.Comment)
 
 	message := tgbotapi.NewMessage(chatID, text)
-	message.ReplyMarkup = tgbotapi.NewOneTimeReplyKeyboard(
-		tgbotapi.NewKeyboardButtonRow(
-			tgbotapi.NewKeyboardButton(confirmYes),
-			tgbotapi.NewKeyboardButton(confirmNo),
+	message.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(confirmYes, confirmYes),
+			tgbotapi.NewInlineKeyboardButtonData(confirmNo, confirmNo),
 		),
 	)
 	message.ParseMode = tgbotapi.ModeMarkdown
@@ -315,7 +315,6 @@ func (c *createProposalCommand) handleWaitingForConfirmState(confirmationState s
 	c.logger.Info("user updated")
 
 	message := tgbotapi.NewMessage(chatID, "Предложение отправлено на голосование.")
-	message.ReplyMarkup = tgbotapi.NewRemoveKeyboard(true)
 
 	return message
 }

@@ -7,6 +7,7 @@ import (
 	"access_governance_system/internal/db/repositories"
 	"access_governance_system/internal/di"
 	"access_governance_system/internal/services"
+	tgbot "access_governance_system/internal/tg_bot/extension"
 	"fmt"
 	"github.com/go-co-op/gocron"
 	"math"
@@ -302,21 +303,19 @@ func sendNotificationsIfProposalApproved(
 	nominator, err := userRepository.GetOneByID(proposal.NominatorID)
 	if err != nil {
 		logger.Errorw("could not get nominator", "error", err)
+		return
 	}
 
 	bot, err := tgbotapi.NewBotAPI(config.AccessGovernanceBot.Token)
 	if err != nil {
 		logger.Errorw("could not create bot", "error", err)
+		return
 	}
 
-	inviteLinkConfig := tgbotapi.ChatInviteLinkConfig{
-		ChatConfig: tgbotapi.ChatConfig{
-			ChatID: config.App.MembersChatID,
-		},
-	}
-	inviteLink, err := bot.GetInviteLink(inviteLinkConfig)
+	inviteLink, err := tgbot.CreateChatInviteLink(bot, config.App.MembersChatID, nominator.TelegramNickname, proposal.NomineeTelegramNickname)
 	if err != nil {
-		logger.Errorw("could not get invite link", "error", err)
+		logger.Errorw("could not create invite link", "error", err)
+		return
 	}
 
 	messages := messagesForProposalApprovedToNominator(proposal, nominator, inviteLink)

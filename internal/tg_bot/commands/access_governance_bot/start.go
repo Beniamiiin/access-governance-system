@@ -48,7 +48,7 @@ func (c *startCommand) Handle(command, arguments string, user *models.User, bot 
 	messages = append(messages, tgbotapi.NewMessage(chatID, text))
 
 	if user.Role == models.UserRoleSeeder && user.DiscordID == 0 {
-		message := c.createInstructionMessageForSeeder(bot, chatID)
+		message := c.createInstructionMessageForSeeder(bot, chatID, user.TelegramNickname)
 
 		if message == nil {
 			return []tgbotapi.Chattable{tgbot.DefaultErrorMessage(chatID)}
@@ -60,24 +60,14 @@ func (c *startCommand) Handle(command, arguments string, user *models.User, bot 
 	return messages
 }
 
-func (c *startCommand) createInstructionMessageForSeeder(bot *tgbotapi.BotAPI, chatID int64) tgbotapi.Chattable {
-	seedersChatInviteLink, err := tgbot.CreateChatInviteLink(bot, c.config.App.SeedersChatID)
-	if err != nil {
-		c.logger.Errorf("could not create seeders chat invite link: %v", err)
-		return nil
-	}
-
-	membersChatInviteLink, err := tgbot.CreateChatInviteLink(bot, c.config.App.MembersChatID)
+func (c *startCommand) createInstructionMessageForSeeder(bot *tgbotapi.BotAPI, chatID int64, nomineeTelegramNickname string) tgbotapi.Chattable {
+	membersChatInviteLink, err := tgbot.CreateChatInviteLink(bot, c.config.App.MembersChatID, "Shmit16", nomineeTelegramNickname)
 	if err != nil {
 		c.logger.Errorf("could not create members chat invite link: %v", err)
 		return nil
 	}
 
-	messageText := fmt.Sprintf(`
-Обязательно убедись, что ты вступил в наши группы:
-1. Вступить в группу для members — %s
-2. Вступить в группу для seeders — %s
-`, membersChatInviteLink, seedersChatInviteLink)
+	messageText := fmt.Sprintf("Обязательно убедись, что ты вступил в нашу группу: %s", membersChatInviteLink)
 
 	message := tgbotapi.NewMessage(chatID, messageText)
 	message.DisableWebPagePreview = true

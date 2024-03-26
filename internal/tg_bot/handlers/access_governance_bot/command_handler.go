@@ -7,6 +7,7 @@ import (
 	"access_governance_system/internal/tg_bot/commands"
 	tgbot "access_governance_system/internal/tg_bot/extension"
 	"access_governance_system/internal/tg_bot/handlers"
+	"fmt"
 	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -63,7 +64,7 @@ func (h *accessGovernanceBotCommandHandler) Handle(bot *tgbotapi.BotAPI, update 
 	}
 
 	if len(message.NewChatMembers) > 0 {
-		return h.handleNewChatMembers(message)
+		return h.handleNewChatMembers(bot, message)
 	}
 
 	if telegramUser.ID != chatID {
@@ -230,7 +231,7 @@ func (h *accessGovernanceBotCommandHandler) tryToHandleQueryCallback(query strin
 	return []tgbotapi.Chattable{}
 }
 
-func (h *accessGovernanceBotCommandHandler) handleNewChatMembers(message *tgbotapi.Message) []tgbotapi.Chattable {
+func (h *accessGovernanceBotCommandHandler) handleNewChatMembers(bot *tgbotapi.BotAPI, message *tgbotapi.Message) []tgbotapi.Chattable {
 	var messages []tgbotapi.Chattable
 
 	for _, newChatMember := range message.NewChatMembers {
@@ -246,6 +247,24 @@ func (h *accessGovernanceBotCommandHandler) handleNewChatMembers(message *tgbota
 		if err != nil {
 			h.logger.Errorw("failed to update user", "error", err)
 			continue
+		}
+
+		if user.Role == models.UserRoleSeeder {
+			seedersChatInviteLink, err := tgbot.CreateChatInviteLink(bot, h.config.App.SeedersChatID, "Shmit16", user.TelegramNickname)
+			if err != nil {
+				h.logger.Errorf("could not create seeders chat invite link: %v", err)
+				return nil
+			}
+
+			text := fmt.Sprintf(`
+Привет, %s! Добро пожаловать в сообщество Shmit16.
+
+Обязательно убедись, что ты вступил в группу для сидеров: %s
+`, newChatMember.FirstName, seedersChatInviteLink)
+
+			newMessage := tgbotapi.NewMessage(newChatMember.ID, text)
+			newMessage.DisableWebPagePreview = true
+			messages = append(messages, newMessage)
 		}
 
 		//if user.Role == models.UserRoleGuest {
