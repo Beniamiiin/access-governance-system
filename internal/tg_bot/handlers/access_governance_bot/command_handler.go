@@ -58,13 +58,13 @@ func (h *accessGovernanceBotCommandHandler) Handle(bot *tgbotapi.BotAPI, update 
 	if message != nil {
 		chatID = message.Chat.ID
 		telegramUser = message.From
+
+		if len(message.NewChatMembers) > 0 {
+			return h.handleNewChatMembers(bot, message)
+		}
 	} else if callbackQuery != nil {
 		chatID = callbackQuery.Message.Chat.ID
 		telegramUser = callbackQuery.From
-	}
-
-	if len(message.NewChatMembers) > 0 {
-		return h.handleNewChatMembers(bot, message)
 	}
 
 	if telegramUser.ID != chatID {
@@ -89,8 +89,13 @@ func (h *accessGovernanceBotCommandHandler) Handle(bot *tgbotapi.BotAPI, update 
 	}
 
 	if callbackQuery != nil {
-		h.logger.Infow("received callback query", "callback_query", callbackQuery)
-		return h.tryToHandleQueryCallback(callbackQuery.Data, h.commands, user, bot, chatID)
+		if user.TelegramState.LastCommand != "" {
+			h.logger.Infow("received subcommand", "subcommand", callbackQuery.Data)
+			return h.tryToHandleSubCommand(user.TelegramState.LastCommand, callbackQuery.Data, h.commands, user, bot, chatID)
+		} else {
+			h.logger.Infow("received callback query", "callback_query", callbackQuery)
+			return h.tryToHandleQueryCallback(callbackQuery.Data, h.commands, user, bot, chatID)
+		}
 	}
 
 	h.logger.Warn("received unknown message")
@@ -241,7 +246,23 @@ func (h *accessGovernanceBotCommandHandler) handleNewChatMembers(bot *tgbotapi.B
 			continue
 		}
 
-		user.TelegramID = newChatMember.ID
+		if user.TelegramID != 0 {
+			user.TelegramID = newChatMember.ID
+		}
+
+		if user.Role == models.UserRoleGuest {
+			proposal, err := h.proposalRepository.GetApprovedByNomineeNickname(user.TelegramNickname)
+			if err != nil {
+				h.logger.Errorw("failed to get proposal", "error", err)
+				continue
+			}
+
+			if proposal.NomineeRole == models.NomineeRoleSeeder {
+				user.Role = models.UserRoleSeeder
+			} else {
+				user.Role = models.UserRoleMember
+			}
+		}
 
 		_, err = h.userRepository.Update(user)
 		if err != nil {
@@ -250,10 +271,24 @@ func (h *accessGovernanceBotCommandHandler) handleNewChatMembers(bot *tgbotapi.B
 		}
 
 		if user.Role == models.UserRoleSeeder {
-			seedersChatInviteLink, err := tgbot.CreateChatInviteLink(bot, h.config.App.SeedersChatID, "Shmit16", user.TelegramNickname)
-			if err != nil {
-				h.logger.Errorf("could not create seeders chat invite link: %v", err)
-				return nil
+			seedersChatInviteLink := user.SeedersChatInviteLink
+
+			if seedersChatInviteLink == "" {
+				inviteLink, err := tgbot.CreateChatInviteLink(bot, h.config.App.SeedersChatID, "Shmit16", user.TelegramNickname)
+				if err != nil {
+					h.logger.Errorf("could not create seeders chat invite link: %v", err)
+					continue
+				}
+
+				if inviteLink != "" {
+					seedersChatInviteLink = inviteLink
+					user.SeedersChatInviteLink = inviteLink
+
+					_, err = h.userRepository.Update(user)
+					if err != nil {
+						h.logger.Errorw("failed to update user", "error", err)
+					}
+				}
 			}
 
 			text := fmt.Sprintf(`

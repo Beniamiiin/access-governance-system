@@ -10,5 +10,7 @@ CREATE TABLE IF NOT EXISTS users (
     backers_id VARCHAR[] NOT NULL DEFAULT '{}'::VARCHAR[],
     nominator_id INTEGER,
     temp_proposal JSONB,
-    telegram_state JSONB
+    telegram_state JSONB,
+    members_chat_invite_link VARCHAR,
+    seeders_chat_invite_link VARCHAR
 );

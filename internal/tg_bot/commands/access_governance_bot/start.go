@@ -47,8 +47,8 @@ func (c *startCommand) Handle(command, arguments string, user *models.User, bot 
 `
 	messages = append(messages, tgbotapi.NewMessage(chatID, text))
 
-	if user.Role == models.UserRoleSeeder && user.DiscordID == 0 {
-		message := c.createInstructionMessageForSeeder(bot, chatID, user.TelegramNickname)
+	if user.Role == models.UserRoleSeeder {
+		message := c.createInstructionMessageForSeeder(bot, chatID, user)
 
 		if message == nil {
 			return []tgbotapi.Chattable{tgbot.DefaultErrorMessage(chatID)}
@@ -60,11 +60,25 @@ func (c *startCommand) Handle(command, arguments string, user *models.User, bot 
 	return messages
 }
 
-func (c *startCommand) createInstructionMessageForSeeder(bot *tgbotapi.BotAPI, chatID int64, nomineeTelegramNickname string) tgbotapi.Chattable {
-	membersChatInviteLink, err := tgbot.CreateChatInviteLink(bot, c.config.App.MembersChatID, "Shmit16", nomineeTelegramNickname)
-	if err != nil {
-		c.logger.Errorf("could not create members chat invite link: %v", err)
-		return nil
+func (c *startCommand) createInstructionMessageForSeeder(bot *tgbotapi.BotAPI, chatID int64, user *models.User) tgbotapi.Chattable {
+	membersChatInviteLink := user.MembersChatInviteLink
+
+	if membersChatInviteLink == "" {
+		inviteLink, err := tgbot.CreateChatInviteLink(bot, c.config.App.MembersChatID, "Shmit16", user.TelegramNickname)
+		if err != nil {
+			c.logger.Errorf("could not create members chat invite link: %v", err)
+			return nil
+		}
+
+		if inviteLink != "" {
+			membersChatInviteLink = inviteLink
+			user.MembersChatInviteLink = inviteLink
+
+			_, err = c.userRepository.Update(user)
+			if err != nil {
+				c.logger.Errorw("failed to update user", "error", err)
+			}
+		}
 	}
 
 	messageText := fmt.Sprintf("Обязательно убедись, что ты вступил в нашу группу: %s", membersChatInviteLink)

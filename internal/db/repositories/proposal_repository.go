@@ -17,6 +17,7 @@ type ProposalRepository interface {
 	Delete(request *models.Proposal) error
 	GetOneByID(id int64) (*models.Proposal, error)
 	GetManyByNomineeNickname(nomineeNickName string) ([]*models.Proposal, error)
+	GetApprovedByNomineeNickname(nomineeNickName string) (*models.Proposal, error)
 	GetManyByStatus(status ...models.ProposalStatus) ([]*models.Proposal, error)
 }
 
@@ -91,6 +92,21 @@ func (r *proposalRepository) GetManyByNomineeNickname(nomineeNickName string) ([
 		Select()
 
 	return proposals, err
+}
+
+func (r *proposalRepository) GetApprovedByNomineeNickname(nomineeNickName string) (*models.Proposal, error) {
+	proposals := make([]*models.Proposal, 0)
+
+	err := r.db.Model(&proposals).
+		Where("nominee_telegram_nickname = ? AND status = ?", nomineeNickName, models.ProposalStatusApproved).
+		OrderExpr("created_at ASC").
+		Select()
+
+	if len(proposals) == 0 {
+		return nil, errors.New("proposal not found")
+	}
+
+	return proposals[len(proposals)-1], err
 }
 
 func (r *proposalRepository) GetManyByStatus(status ...models.ProposalStatus) ([]*models.Proposal, error) {
