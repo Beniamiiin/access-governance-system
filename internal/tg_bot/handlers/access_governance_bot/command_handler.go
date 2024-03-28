@@ -246,7 +246,7 @@ func (h *accessGovernanceBotCommandHandler) handleNewChatMembers(bot *tgbotapi.B
 			continue
 		}
 
-		if user.TelegramID != 0 {
+		if user.TelegramID == 0 {
 			user.TelegramID = newChatMember.ID
 		}
 
