@@ -54,7 +54,7 @@ func main() {
 				agbcommands.NewCancelProposalCommand(config.App, userRepository, logger),
 				agbcommands.NewApprovedProposalsCommand(proposalRepository, logger),
 				agbcommands.NewCreateProposalCommand(config, userRepository, proposalRepository, voteService, logger),
-				agbcommands.NewPendingProposalsCommand(proposalRepository, logger),
+				agbcommands.NewPendingProposalsCommand(userRepository, proposalRepository, logger),
 				agbcommands.NewAddCommentCommand(userRepository, proposalRepository, config.VoteBot, logger),
 			},
 		),

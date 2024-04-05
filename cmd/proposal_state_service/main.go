@@ -53,7 +53,7 @@ func main() {
 			logger.Fatalw("failed to get proposals", "error", err)
 		}
 
-		proposalsNeedToBeUpdated := getProposalsNeedToBeUpdated(seeders, proposals, userRepository, voteService, config, logger)
+		proposalsNeedToBeUpdated := getProposalsNeedToBeUpdated(seeders, proposals, voteService, userRepository, config, logger)
 
 		if len(proposalsNeedToBeUpdated) == 0 {
 			logger.Info("no proposals to update")
@@ -74,39 +74,60 @@ func main() {
 func getProposalsNeedToBeUpdated(
 	seeders []*models.User,
 	proposals []*models.Proposal,
-	userRepository repositories.UserRepository,
 	voteService services.VoteService,
+	userRepository repositories.UserRepository,
 	config configs.ProposalStateServiceConfig,
 	logger *zap.SugaredLogger,
 ) []*models.Proposal {
-	minRequiredSeedersCount := int(math.Round(float64(len(seeders)) * config.Quorum))
+	var proposalsToUpdate []*models.Proposal
 
-	var proposalsNeedToBeUpdated []*models.Proposal
+	minRequiredSeedersCount := calculateMinRequiredSeedersCount(len(seeders), config)
+	minRequiredYesVotesToOverride := calculateMinRequiredYesVotesToOverride(len(seeders), config)
 
 	for _, proposal := range proposals {
-		if proposal.FinishedAt.After(time.Now()) {
-			continue
+		if proposalIsEligibleForUpdate(proposal, voteService, userRepository, logger, minRequiredSeedersCount, minRequiredYesVotesToOverride, config) {
+			proposalsToUpdate = append(proposalsToUpdate, proposal)
 		}
-
-		votes, err := voteService.GetVotes(proposal.Poll.ID)
-		if err != nil {
-			logger.Errorw("failed to get votes", "error", err)
-			continue
-		}
-
-		yesVotes, noVotes := calculateYesAndNoVotes(votes, config.YesVotesToOvercomeNo)
-		votedUsers := getVotedUsers(votes, userRepository, logger)
-		votedSeeders := getVotedSeeders(votedUsers)
-
-		updateProposalStatus(proposal, votes, votedSeeders, minRequiredSeedersCount, yesVotes, noVotes, config)
-
-		proposalsNeedToBeUpdated = append(proposalsNeedToBeUpdated, proposal)
 	}
 
-	return proposalsNeedToBeUpdated
+	return proposalsToUpdate
 }
 
-func calculateYesAndNoVotes(votes []services.Vote, yesVotesToOvercomeNo float64) (yesVotes int, noVotes int) {
+func proposalIsEligibleForUpdate(
+	proposal *models.Proposal,
+	voteService services.VoteService,
+	userRepository repositories.UserRepository,
+	logger *zap.SugaredLogger,
+	minRequiredSeedersCount, minRequiredYesVotesToOverride int,
+	config configs.ProposalStateServiceConfig,
+) bool {
+	if proposal.FinishedAt.After(time.Now()) {
+		return false
+	}
+
+	votes, err := voteService.GetVotes(proposal.Poll.ID)
+	if err != nil {
+		logger.Errorw("Failed to get votes", "error", err)
+		return false
+	}
+
+	yesVotes, noVotes := countVotes(votes)
+	votedSeedersCount := countVotedSeeders(votes, userRepository, logger)
+
+	proposal.Status = proposalStatus(yesVotes, noVotes, votedSeedersCount, minRequiredSeedersCount, minRequiredYesVotesToOverride, config)
+
+	return true
+}
+
+func calculateMinRequiredSeedersCount(totalSeeders int, config configs.ProposalStateServiceConfig) int {
+	return int(math.Min(math.Round(float64(totalSeeders)*config.Quorum), config.MaxRequiredSeedersCount))
+}
+
+func calculateMinRequiredYesVotesToOverride(totalSeeders int, config configs.ProposalStateServiceConfig) int {
+	return int(math.Round(float64(totalSeeders) * config.YesVotesToOvercomeNo))
+}
+
+func countVotes(votes []services.Vote) (yesVotes, noVotes int) {
 	for _, vote := range votes {
 		if vote.Option == "yes" {
 			yesVotes++
@@ -114,66 +135,35 @@ func calculateYesAndNoVotes(votes []services.Vote, yesVotesToOvercomeNo float64)
 			noVotes++
 		}
 	}
-
-	minRequiredYesVotes := int(math.Round(float64(len(votes)) * yesVotesToOvercomeNo))
-
-	if yesVotes >= minRequiredYesVotes && noVotes > 0 {
-		noVotes--
-	}
-
 	return yesVotes, noVotes
 }
 
-func getVotedUsers(votes []services.Vote, userRepository repositories.UserRepository, logger *zap.SugaredLogger) []*models.User {
-	var votedUsers []*models.User
-
+func countVotedSeeders(votes []services.Vote, userRepository repositories.UserRepository, logger *zap.SugaredLogger) int {
+	votedSeedersCount := 0
 	for _, vote := range votes {
 		user, err := userRepository.GetOneByTelegramID(vote.UserID)
-		if err != nil {
-			logger.Errorw("failed to get user", "error", err)
-			continue
-		} else if user == nil {
-			logger.Errorw("user not found", "userID", vote.UserID)
+		if err != nil || user == nil {
 			continue
 		}
-
-		votedUsers = append(votedUsers, user)
-	}
-
-	return votedUsers
-}
-
-func getVotedSeeders(users []*models.User) []*models.User {
-	var votedSeeders []*models.User
-
-	for _, user := range users {
 		if user.Role == models.UserRoleSeeder {
-			votedSeeders = append(votedSeeders, user)
+			votedSeedersCount++
 		}
 	}
-
-	return votedSeeders
+	return votedSeedersCount
 }
 
-func updateProposalStatus(
-	proposal *models.Proposal,
-	votes []services.Vote,
-	votedSeeders []*models.User,
-	minRequiredSeedersCount,
-	yesVotes,
-	noVotes int,
+func proposalStatus(
+	yesVotes, noVotes, votedSeedersCount, minRequiredSeedersCount, minRequiredYesVotesToOverride int,
 	config configs.ProposalStateServiceConfig,
-) {
-	minRequiredYesVotes := int(math.Round(float64(len(votes)) * config.MinYesPercentage))
+) models.ProposalStatus {
+	minRequiredYesVotes := int(math.Max(math.Round(float64(yesVotes+noVotes)*config.MinYesVotesPercentage), config.MinRequiredYesVotes))
 
-	if len(votes) == 0 {
-		proposal.Status = models.ProposalStatusRejected
-	} else if len(votedSeeders) < minRequiredSeedersCount {
-		proposal.Status = models.ProposalStatusNoQuorum
-	} else if yesVotes < minRequiredYesVotes || noVotes > 0 {
-		proposal.Status = models.ProposalStatusRejected
+	if votedSeedersCount < minRequiredSeedersCount {
+		return models.ProposalStatusNoQuorum
+	} else if yesVotes < minRequiredYesVotes || (noVotes > 0 && yesVotes < minRequiredYesVotesToOverride) {
+		return models.ProposalStatusRejected
 	} else {
-		proposal.Status = models.ProposalStatusApproved
+		return models.ProposalStatusApproved
 	}
 }
 

@@ -17,12 +17,18 @@ import (
 const pendingProposalsCommandName = "pending_proposals"
 
 type pendingProposalsCommand struct {
+	userRepository     repositories.UserRepository
 	proposalRepository repositories.ProposalRepository
 	logger             *zap.SugaredLogger
 }
 
-func NewPendingProposalsCommand(proposalRepository repositories.ProposalRepository, logger *zap.SugaredLogger) commands.Command {
+func NewPendingProposalsCommand(
+	userRepository repositories.UserRepository,
+	proposalRepository repositories.ProposalRepository,
+	logger *zap.SugaredLogger,
+) commands.Command {
 	return &pendingProposalsCommand{
+		userRepository:     userRepository,
 		proposalRepository: proposalRepository,
 		logger:             logger,
 	}
@@ -37,6 +43,13 @@ func (c *pendingProposalsCommand) Handle(command, arguments string, user *models
 	if err != nil {
 		c.logger.Errorw("failed to get proposals", "error", err)
 		return []tgbotapi.Chattable{tgbot.DefaultErrorMessage(chatID)}
+	}
+
+	user.TelegramState.LastCommand = ""
+
+	_, err = c.userRepository.Update(user)
+	if err != nil {
+		c.logger.Errorw("failed to update user", "error", err)
 	}
 
 	messages := make([]tgbotapi.Chattable, 0, len(proposals))
