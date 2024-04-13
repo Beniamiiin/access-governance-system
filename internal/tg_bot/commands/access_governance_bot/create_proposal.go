@@ -130,10 +130,6 @@ func (c *createProposalCommand) handleCreateProposalCommand(user *models.User, c
 }
 
 func (c *createProposalCommand) handleWaitingForTypeState(proposalNomineeType string, user *models.User, chatID int64) tgbotapi.Chattable {
-	text := "Напиши никнейм пользователя в telegram в формате @nickname, которого ты хочешь добавить в сообщество. " +
-		"Если у пользователя нет никнейма, то попроси его создать, так как без него мы не сможем добавить его в сообщество."
-	message := tgbotapi.NewMessage(chatID, text)
-
 	switch strings.ToLower(proposalNomineeType) {
 	case proposalTypeMember:
 		user.TempProposal.NomineeRole = models.NomineeRoleMember
@@ -147,6 +143,13 @@ func (c *createProposalCommand) handleWaitingForTypeState(proposalNomineeType st
 	user.TelegramState.LastCommandState = waitingForNicknameState
 	_ = c.updateUser(user)
 
+	text := fmt.Sprintf(
+		"Напиши никнейм пользователя *%s* в telegram в формате @nickname, которого ты хочешь добавить в сообщество. "+
+			"Если у пользователя нет никнейма, то попроси его создать, так как без него мы не сможем добавить его в сообщество.",
+		user.TempProposal.NomineeRole.String(),
+	)
+	message := tgbotapi.NewMessage(chatID, text)
+	message.ParseMode = tgbotapi.ModeMarkdown
 	return message
 }
 
