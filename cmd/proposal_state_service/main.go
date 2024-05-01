@@ -1,6 +1,10 @@
 package main
 
 import (
+	"fmt"
+	"math"
+	"time"
+
 	"access_governance_system/configs"
 	"access_governance_system/internal/db"
 	"access_governance_system/internal/db/models"
@@ -8,11 +12,7 @@ import (
 	"access_governance_system/internal/di"
 	"access_governance_system/internal/services"
 	tgbot "access_governance_system/internal/tg_bot/extension"
-	"fmt"
 	"github.com/go-co-op/gocron"
-	"math"
-	"time"
-
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"go.uber.org/zap"
 )
@@ -35,38 +35,53 @@ func main() {
 	}
 	logger.Info("db started")
 
-	s.Cron("10 12 * * *").Do(func() {
-		logger.Info("initializing repositories and services")
-		userRepository := repositories.NewUserRepository(database)
-		proposalRepository := repositories.NewProposalRepository(database)
-		voteService := services.NewVoteService(config.VoteAPI.URL)
+	s.Cron("10 12 * * *").Do(
+		func() {
+			logger.Info("initializing repositories and services")
+			userRepository := repositories.NewUserRepository(database)
+			proposalRepository := repositories.NewProposalRepository(database)
+			voteService := services.NewVoteService(config.VoteAPI.URL)
 
-		logger.Info("getting seeders")
-		seeders, err := userRepository.GetManyByRole(models.UserRoleSeeder)
-		if err != nil {
-			logger.Fatalw("failed to get seeders", "error", err)
-		}
-
-		logger.Info("getting proposals")
-		proposals, err := proposalRepository.GetManyByStatus(models.ProposalStatusCreated)
-		if err != nil {
-			logger.Fatalw("failed to get proposals", "error", err)
-		}
-
-		proposalsNeedToBeUpdated := getProposalsNeedToBeUpdated(seeders, proposals, voteService, userRepository, config, logger)
-
-		if len(proposalsNeedToBeUpdated) == 0 {
-			logger.Info("no proposals to update")
-		} else {
-			updatedProposals := updateProposals(proposalsNeedToBeUpdated, proposalRepository, voteService, userRepository, logger)
-
-			for _, proposal := range updatedProposals {
-				sendNotifications(proposal, userRepository, config, logger)
+			logger.Info("getting seeders")
+			seeders, err := userRepository.GetManyByRole(models.UserRoleSeeder)
+			if err != nil {
+				logger.Fatalw("failed to get seeders", "error", err)
 			}
 
-			logger.Info("proposals updated")
-		}
-	})
+			logger.Info("getting proposals")
+			proposals, err := proposalRepository.GetManyByStatus(models.ProposalStatusCreated)
+			if err != nil {
+				logger.Fatalw("failed to get proposals", "error", err)
+			}
+
+			proposalsNeedToBeUpdated := getProposalsNeedToBeUpdated(
+				seeders,
+				proposals,
+				voteService,
+				userRepository,
+				config,
+				logger,
+			)
+
+			if len(proposalsNeedToBeUpdated) == 0 {
+				logger.Info("no proposals to update")
+			} else {
+				updatedProposals := updateProposals(
+					proposalsNeedToBeUpdated,
+					proposalRepository,
+					voteService,
+					userRepository,
+					logger,
+				)
+
+				for _, proposal := range updatedProposals {
+					sendNotifications(proposal, userRepository, config, logger)
+				}
+
+				logger.Info("proposals updated")
+			}
+		},
+	)
 
 	s.StartBlocking()
 }
@@ -85,7 +100,15 @@ func getProposalsNeedToBeUpdated(
 	minRequiredYesVotesToOverride := calculateMinRequiredYesVotesToOverride(len(seeders), config)
 
 	for _, proposal := range proposals {
-		if proposalIsEligibleForUpdate(proposal, voteService, userRepository, logger, minRequiredSeedersCount, minRequiredYesVotesToOverride, config) {
+		if proposalIsEligibleForUpdate(
+			proposal,
+			voteService,
+			userRepository,
+			logger,
+			minRequiredSeedersCount,
+			minRequiredYesVotesToOverride,
+			config,
+		) {
 			proposalsToUpdate = append(proposalsToUpdate, proposal)
 		}
 	}
@@ -101,20 +124,41 @@ func proposalIsEligibleForUpdate(
 	minRequiredSeedersCount, minRequiredYesVotesToOverride int,
 	config configs.ProposalStateServiceConfig,
 ) bool {
+	logger.Infow("checking proposal", "proposal", proposal)
+
 	if proposal.FinishedAt.After(time.Now()) {
+		logger.Infow("proposal is not finished yet", "proposal", proposal)
 		return false
 	}
 
 	votes, err := voteService.GetVotes(proposal.Poll.ID)
 	if err != nil {
-		logger.Errorw("Failed to get votes", "error", err)
+		logger.Errorw("Failed to get votes", "error", err, "proposal", proposal)
 		return false
 	}
 
 	yesVotes, noVotes := countVotes(votes)
 	votedSeedersCount := countVotedSeeders(votes, userRepository, logger)
 
-	proposal.Status = proposalStatus(yesVotes, noVotes, votedSeedersCount, minRequiredSeedersCount, minRequiredYesVotesToOverride, config)
+	logger.Infow(
+		"getting proposal status",
+		"proposal", proposal,
+		"yesVotes", yesVotes,
+		"noVotes", noVotes,
+		"votedSeedersCount", votedSeedersCount,
+		"minRequiredSeedersCount", minRequiredSeedersCount,
+		"minRequiredYesVotesToOverride", minRequiredYesVotesToOverride,
+		"config", config,
+	)
+	proposal.Status = proposalStatus(
+		yesVotes,
+		noVotes,
+		votedSeedersCount,
+		minRequiredSeedersCount,
+		minRequiredYesVotesToOverride,
+		config,
+	)
+	logger.Infow("proposal status updated", "proposal", proposal)
 
 	return true
 }
@@ -156,7 +200,12 @@ func proposalStatus(
 	yesVotes, noVotes, votedSeedersCount, minRequiredSeedersCount, minRequiredYesVotesToOverride int,
 	config configs.ProposalStateServiceConfig,
 ) models.ProposalStatus {
-	minRequiredYesVotes := int(math.Max(math.Round(float64(yesVotes+noVotes)*config.MinYesVotesPercentage), config.MinRequiredYesVotes))
+	minRequiredYesVotes := int(
+		math.Max(
+			math.Round(float64(yesVotes+noVotes)*config.MinYesVotesPercentage),
+			config.MinRequiredYesVotes,
+		),
+	)
 
 	if votedSeedersCount < minRequiredSeedersCount {
 		return models.ProposalStatusNoQuorum
@@ -197,17 +246,32 @@ func updateProposals(
 				}
 			}
 
-			user := &models.User{
-				Name:             proposal.NomineeName,
-				TelegramNickname: proposal.NomineeTelegramNickname,
-				Role:             models.UserRoleGuest,
-				BackersID:        backersIDs,
-			}
-
-			_, err = userRepository.Create(user)
+			user, err := userRepository.GetOneByTelegramNickname(proposal.NomineeTelegramNickname)
 			if err != nil {
-				logger.Errorw("failed to create user", "error", err)
+				logger.Errorw("failed to get user", "error", err)
 				continue
+			} else if user != nil && proposal.NomineeRole == models.NomineeRoleSeeder {
+				user.BackersID = backersIDs
+				user.Role = models.UserRoleSeeder
+
+				_, err = userRepository.Update(user)
+				if err != nil {
+					logger.Errorw("failed to update user", "error", err)
+					continue
+				}
+			} else if user == nil {
+				user = &models.User{
+					Name:             proposal.NomineeName,
+					TelegramNickname: proposal.NomineeTelegramNickname,
+					Role:             models.UserRoleGuest,
+					BackersID:        backersIDs,
+				}
+
+				_, err = userRepository.Create(user)
+				if err != nil {
+					logger.Errorw("failed to create user", "error", err)
+					continue
+				}
 			}
 		}
 
@@ -242,11 +306,13 @@ func sendNotificationsIfProposalRejected(
 	nominator, err := userRepository.GetOneByID(proposal.NominatorID)
 	if err != nil {
 		logger.Errorw("could not get nominator", "error", err)
+		return
 	}
 
 	bot, err := tgbotapi.NewBotAPI(config.AccessGovernanceBot.Token)
 	if err != nil {
 		logger.Errorw("could not create bot", "error", err)
+		return
 	}
 
 	messages := []tgbotapi.MessageConfig{
@@ -278,7 +344,11 @@ _Это значит, что кворум не состоялся. Голосо�
 }
 
 func messageForProposalRejectedToSeedersGroup(proposal *models.Proposal) tgbotapi.MessageConfig {
-	text := fmt.Sprintf("Кандидатура %s (@%s) была отклонена. Повторная заявка может быть создана через 3 месяца.", proposal.NomineeName, proposal.NomineeTelegramNickname)
+	text := fmt.Sprintf(
+		"Кандидатура %s (@%s) была отклонена. Повторная заявка может быть создана через 3 месяца.",
+		proposal.NomineeName,
+		proposal.NomineeTelegramNickname,
+	)
 	message := tgbotapi.NewMessage(int64(proposal.Poll.ChatID), text)
 	message.BaseChat.ReplyToMessageID = proposal.Poll.PollMessageID
 	return message
@@ -302,13 +372,29 @@ func sendNotificationsIfProposalApproved(
 		return
 	}
 
-	inviteLink, err := tgbot.CreateChatInviteLink(bot, config.App.MembersChatID, nominator.TelegramNickname, proposal.NomineeTelegramNickname)
+	membersChatInviteLink, err := tgbot.CreateChatInviteLink(
+		bot,
+		config.App.MembersChatID,
+		nominator.TelegramNickname,
+		proposal.NomineeTelegramNickname,
+	)
 	if err != nil {
-		logger.Errorw("could not create invite link", "error", err)
+		logger.Errorw("could not create members invite link", "error", err)
 		return
 	}
 
-	messages := messagesForProposalApprovedToNominator(proposal, nominator, inviteLink)
+	seedersChatInviteLink, err := tgbot.CreateChatInviteLink(
+		bot,
+		config.App.SeedersChatID,
+		nominator.TelegramNickname,
+		proposal.NomineeTelegramNickname,
+	)
+	if err != nil {
+		logger.Errorw("could not create seeders invite link", "error", err)
+		return
+	}
+
+	messages := messagesForProposalApprovedToNominator(proposal, nominator, membersChatInviteLink, seedersChatInviteLink)
 
 	for _, message := range messages {
 		_, err = bot.Send(message)
@@ -318,26 +404,47 @@ func sendNotificationsIfProposalApproved(
 	}
 }
 
-func messagesForProposalApprovedToNominator(proposal *models.Proposal, nominator *models.User, inviteLink string) []tgbotapi.MessageConfig {
+func messagesForProposalApprovedToNominator(
+	proposal *models.Proposal,
+	nominator *models.User,
+	membersChatInviteLink string,
+	seedersChatInviteLink string,
+) []tgbotapi.MessageConfig {
 	return []tgbotapi.MessageConfig{
 		func() tgbotapi.MessageConfig {
-			text := fmt.Sprintf(`
+			text := fmt.Sprintf(
+				`
 Кандидатура %s (@%s) была принята.
 
 Перешли ему следующее сообщение:
-`, proposal.NomineeName, proposal.NomineeTelegramNickname)
+`, proposal.NomineeName, proposal.NomineeTelegramNickname,
+			)
 			message := tgbotapi.NewMessage(nominator.TelegramID, text)
 			message.DisableWebPagePreview = true
 			return message
 		}(),
 		func() tgbotapi.MessageConfig {
-			text := fmt.Sprintf(`
+			var text string
+			switch proposal.NomineeRole {
+			case models.NomineeRoleMember:
+				text = fmt.Sprintf(
+					`
 Привет! Хочу тебя пригласить вступить в группу Shmit16. Я являюсь участником этого сообщества, и мне удалось получить одобрение на твое вступление. 
 
 Для того, чтобы войти в группу, перейди по [ссылке](%s) и нажми кнопку "Присоединиться".
 
 _Комьюнити Shmit16 выросло из группы IT-предпринимателей, которые собирались на бизнес-вечера по адресу Шмитовский проезд, 16. Спустя 10 лет сообщество насчитывает сотни людей разных специальностей по всему миру. Участие в сообществе бесплатное. Вступая в чат, тебе открывается доступ к мероприятиям и дискуссиям сообщества — фестивали, ретриты, онлайн и офлайн._ 
-`, inviteLink)
+`, membersChatInviteLink,
+				)
+			case models.NomineeRoleSeeder:
+				text = fmt.Sprintf(
+					`
+Привет! Тебя повысили до seeder. 
+
+Для того, чтобы войти в группу для сидеров, перейди по [ссылке](%s) и нажми кнопку "Присоединиться".
+`, seedersChatInviteLink,
+				)
+			}
 			message := tgbotapi.NewMessage(nominator.TelegramID, text)
 			message.ParseMode = tgbotapi.ModeMarkdown
 			message.DisableWebPagePreview = true
@@ -376,13 +483,21 @@ func sendNotificationsIfProposalNoQuorum(
 }
 
 func messageForProposalNoQuorumToNominator(proposal *models.Proposal, nominator *models.User) tgbotapi.MessageConfig {
-	text := fmt.Sprintf("Кандидатура %s (@%s) была отклонена по причине отсутствия кворума.", proposal.NomineeName, proposal.NomineeTelegramNickname)
+	text := fmt.Sprintf(
+		"Кандидатура %s (@%s) была отклонена по причине отсутствия кворума.",
+		proposal.NomineeName,
+		proposal.NomineeTelegramNickname,
+	)
 	message := tgbotapi.NewMessage(int64(nominator.TelegramID), text)
 	return message
 }
 
 func messageForProposalNoQuorumToSeedersGroup(proposal *models.Proposal) tgbotapi.MessageConfig {
-	text := fmt.Sprintf("Кандидатура %s (@%s) была отклонена по причине отсутствия кворума.", proposal.NomineeName, proposal.NomineeTelegramNickname)
+	text := fmt.Sprintf(
+		"Кандидатура %s (@%s) была отклонена по причине отсутствия кворума.",
+		proposal.NomineeName,
+		proposal.NomineeTelegramNickname,
+	)
 	message := tgbotapi.NewMessage(int64(proposal.Poll.ChatID), text)
 	message.BaseChat.ReplyToMessageID = proposal.Poll.PollMessageID
 	return message
