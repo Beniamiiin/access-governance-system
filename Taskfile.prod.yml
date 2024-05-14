@@ -54,7 +54,7 @@ tasks:
       - install-docker-plugins
     vars:
       URL: ghcr.io/beniamiiin/access-governance-system:agb
-      SERVICE_NAME: access-governance-bot
+      SERVICE_NAME: acs-bot
     cmds:
       - docker pull {{.URL}}
       - docker image tag {{.URL}} {{.SERVICE_NAME}}
@@ -64,7 +64,7 @@ tasks:
   access-governance-bot-down:
     desc: Stop access governance bot
     vars:
-      SERVICE_NAME: access-governance-bot
+      SERVICE_NAME: acs-bot
     cmds:
       - docker rm -f {{.SERVICE_NAME}}
       - docker rmi -f {{.SERVICE_NAME}}
@@ -75,7 +75,7 @@ tasks:
     desc: Start vote bot
     vars:
       URL: ghcr.io/beniamiiin/ultimate-poll-bot:bot
-      SERVICE_NAME: vot-bot
+      SERVICE_NAME: acs-vote-bot
     cmds:
       - docker pull {{.URL}}
       - docker image tag {{.URL}} {{.SERVICE_NAME}}
@@ -85,7 +85,7 @@ tasks:
   vote-bot-down:
     desc: Stop vot bot
     vars:
-      SERVICE_NAME: vot-bot
+      SERVICE_NAME: acs-vote-bot
     cmds:
       - docker rm -f {{.SERVICE_NAME}}
       - docker rmi -f {{.SERVICE_NAME}}
@@ -96,7 +96,7 @@ tasks:
     desc: Start vote bot
     vars:
       URL: ghcr.io/beniamiiin/ultimate-poll-bot:api
-      SERVICE_NAME: vot-bot-api
+      SERVICE_NAME: acs-vote-bot-api
     cmds:
       - docker pull {{.URL}}
       - docker image tag {{.URL}} {{.SERVICE_NAME}}
@@ -106,7 +106,7 @@ tasks:
   vote-bot-api-down:
     desc: Stop vot bot
     vars:
-      SERVICE_NAME: vot-bot-api
+      SERVICE_NAME: acs-vote-bot-api
     cmds:
       - docker rm -f {{.SERVICE_NAME}}
       - docker rmi -f {{.SERVICE_NAME}}
@@ -119,7 +119,7 @@ tasks:
       - install-docker-plugins
     vars:
       URL: ghcr.io/beniamiiin/access-governance-system:pss
-      SERVICE_NAME: proposal-state-service
+      SERVICE_NAME: acs-proposal-state-service
     cmds:
       - docker pull {{.URL}}
       - docker image tag {{.URL}} {{.SERVICE_NAME}}
@@ -129,7 +129,7 @@ tasks:
   proposal-state-service-down:
     desc: Stop proposal state service
     vars:
-      SERVICE_NAME: proposal-state-service
+      SERVICE_NAME: acs-proposal-state-service
     cmds:
       - docker rm -f {{.SERVICE_NAME}}
       - docker rmi -f {{.SERVICE_NAME}}
@@ -142,9 +142,9 @@ tasks:
       - install-docker-plugins
     vars:
       TELEGRAM_BOT_URL: ghcr.io/beniamiiin/access-governance-system:tab
-      TELEGRAM_SERVICE_NAME: authorization-bot-telegram
+      TELEGRAM_SERVICE_NAME: acs-authorization-bot-telegram
       DISCORD_BOT_URL: ghcr.io/beniamiiin/access-governance-system:dab
-      DISCORD_SERVICE_NAME: authorization-bot-discord
+      DISCORD_SERVICE_NAME: acs-authorization-bot-discord
     cmds:
       - docker pull {{.TELEGRAM_BOT_URL}}
       - docker image tag {{.TELEGRAM_BOT_URL}} {{.TELEGRAM_SERVICE_NAME}}
@@ -158,8 +158,8 @@ tasks:
   authorization-bot-down:
     desc: Stop authorization bot
     vars:
-      TELEGRAM_SERVICE_NAME: authorization-bot-telegram
-      DISCORD_SERVICE_NAME: authorization-bot-discord
+      TELEGRAM_SERVICE_NAME: acs-authorization-bot-telegram
+      DISCORD_SERVICE_NAME: acs-authorization-bot-discord
     cmds:
       - docker rm -f {{.TELEGRAM_SERVICE_NAME}}
       - docker rmi -f {{.TELEGRAM_SERVICE_NAME}}
