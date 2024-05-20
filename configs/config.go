@@ -42,7 +42,7 @@ type ProposalStateServiceConfig struct {
 	Quorum                  float64 `env:"QUORUM"`                     // 30% initial parameter for quorum
 	MaxRequiredSeedersCount float64 `env:"MAX_REQUIRED_SEEDERS_COUNT"` // But not more than 10 votes
 	MinYesVotesPercentage   float64 `env:"MIN_YES_VOTES_PERCENTAGE"`   // Minimum 10% of votes should be "Yes"
-	MinRequiredYesVotes     float64 `env:"MIN_REQUIRED_YE_VOTES"`      // But not less than 3
+	MinRequiredYesVotes     float64 `env:"MIN_REQUIRED_YES_VOTES"`     // But not less than 3
 	YesVotesToOvercomeNo    float64 `env:"YES_VOTES_TO_OVERCOME_NO"`   // 50% "yes" votes to overcome one "No vote"
 }
 

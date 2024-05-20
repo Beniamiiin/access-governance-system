@@ -51,8 +51,10 @@ jobs:
             LOKI_URL=${{ secrets.LOKI_URL }}
             DB_URL=${{ secrets.DB_URL }}
             QUORUM=${{ vars.QUORUM }}
-            MIN_YES_PERCENTAGE=${{ vars.MIN_YES_PERCENTAGE }}
+            MAX_REQUIRED_SEEDERS_COUNT=${{ vars.MAX_REQUIRED_SEEDERS_COUNT }}
             YES_VOTES_TO_OVERCOME_NO=${{ vars.YES_VOTES_TO_OVERCOME_NO }}
+            MIN_YES_VOTES_PERCENTAGE=${{ vars.MIN_YES_VOTES_PERCENTAGE }}
+            MIN_REQUIRED_YES_VOTES=${{ vars.MIN_REQUIRED_YES_VOTES }}
             TELEGRAM_ACCESS_GOVERNANCE_BOT_TOKEN=${{ secrets.TELEGRAM_ACCESS_GOVERNANCE_BOT_TOKEN }}
             MEMBERS_CHAT_ID=${{ vars.MEMBERS_CHAT_ID }}
             SEEDERS_CHAT_ID=${{ vars.SEEDERS_CHAT_ID }}
