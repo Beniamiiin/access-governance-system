@@ -37,18 +37,6 @@ services:
     networks:
       - acs-network
 
-  db:
-    image: postgres:latest
-    container_name: db
-    restart: always
-    ports:
-      - "5432:5432"
-    environment:
-      POSTGRES_PASSWORD: $POSTGRES_PASSWORD
-    <<: *loki-logging
-    networks:
-      - acs-network
-
 #  authorization-bot-telegram:
 #    image: ghcr.io/beniamiiin/access-governance-system:tab
 #    container_name: acs-authorization-bot-telegram
