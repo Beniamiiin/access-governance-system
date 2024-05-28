@@ -1,0 +1,66 @@
+version: '3.8'
+
+x-loki-logging: &loki-logging
+  logging:
+    driver: loki
+    options:
+      loki-url: $LOKI_URL
+
+services:
+  access-governance-bot:
+    image: ghcr.io/beniamiiin/access-governance-system:agb
+    container_name: acs-bot
+    <<: *loki-logging
+    networks:
+      - acs-network
+
+  vote-bot:
+    image: ghcr.io/beniamiiin/ultimate-poll-bot:bot
+    container_name: acs-vote-bot
+    <<: *loki-logging
+    networks:
+      - acs-network
+
+  vote-bot-api:
+    image: ghcr.io/beniamiiin/ultimate-poll-bot:api
+    container_name: acs-vote-bot-api
+    ports:
+      - "8000:8000"
+    <<: *loki-logging
+    networks:
+      - acs-network
+
+  proposal-state-service:
+    image: ghcr.io/beniamiiin/access-governance-system:pss
+    container_name: acs-proposal-state-service
+    <<: *loki-logging
+    networks:
+      - acs-network
+
+  db:
+    image: postgres:latest
+    container_name: db
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_PASSWORD: $POSTGRES_PASSWORD
+    <<: *loki-logging
+    networks:
+      - acs-network
+
+#  authorization-bot-telegram:
+#    image: ghcr.io/beniamiiin/access-governance-system:tab
+#    container_name: acs-authorization-bot-telegram
+#    networks:
+#      - acs-network
+#
+#  authorization-bot-discord:
+#    image: ghcr.io/beniamiiin/access-governance-system:dab
+#    container_name: acs-authorization-bot-discord
+#    networks:
+#      - acs-network
+
+networks:
+  acs-network:
+    name: acs-network
