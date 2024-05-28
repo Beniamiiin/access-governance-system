@@ -1,14 +1,6 @@
 package main
 
 import (
-	"access_governance_system/configs"
-	"access_governance_system/internal/db"
-	"access_governance_system/internal/db/repositories"
-	"access_governance_system/internal/di"
-	tgbot "access_governance_system/internal/tg_bot"
-	"access_governance_system/internal/tg_bot/commands"
-	abcommands "access_governance_system/internal/tg_bot/commands/authorization_bot"
-	abhandlers "access_governance_system/internal/tg_bot/handlers/authorization_bot"
 	"context"
 	"errors"
 	"net/http"
@@ -17,12 +9,21 @@ import (
 	"syscall"
 	"time"
 
+	"access_governance_system/configs"
+	"access_governance_system/internal/db"
+	"access_governance_system/internal/db/repositories"
+	"access_governance_system/internal/di"
+	tgbot "access_governance_system/internal/tg_bot"
+	"access_governance_system/internal/tg_bot/commands"
+	abcommands "access_governance_system/internal/tg_bot/commands/authorization_bot"
+	abhandlers "access_governance_system/internal/tg_bot/handlers/authorization_bot"
+
 	"go.uber.org/zap"
 )
 
 func main() {
 	config, err := configs.LoadTelegramAuthrozationBotConfig()
-	logger := di.NewLogger(config.Logger.AppName, config.App.Environment, config.Logger.URL)
+	logger := di.NewLogger()
 
 	if err != nil {
 		logger.Fatalw("failed to load config", "error", err)
@@ -45,7 +46,8 @@ func main() {
 	userRepository := repositories.NewUserRepository(database)
 
 	tgbot.NewBot(
-		abhandlers.NewAuthorizationBotCommandHandler(config.App, userRepository, logger,
+		abhandlers.NewAuthorizationBotCommandHandler(
+			config.App, userRepository, logger,
 			[]commands.Command{
 				abcommands.NewStartCommand(config.DiscordAuthrozationBot, userRepository, logger),
 			},

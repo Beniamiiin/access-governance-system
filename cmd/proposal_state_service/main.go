@@ -21,7 +21,7 @@ func main() {
 	s := gocron.NewScheduler(time.UTC)
 
 	config, err := configs.LoadProposalStateServiceConfig()
-	logger := di.NewLogger(config.Logger.AppName, config.App.Environment, config.Logger.URL)
+	logger := di.NewLogger()
 
 	if err != nil {
 		logger.Fatalw("failed to load config", "error", err)

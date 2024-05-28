@@ -1,8 +1,6 @@
 package main
 
 import (
-	"access_governance_system/configs"
-	"access_governance_system/internal/di"
 	"context"
 	"errors"
 	"fmt"
@@ -11,6 +9,9 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+
+	"access_governance_system/configs"
+	"access_governance_system/internal/di"
 
 	"github.com/bwmarrin/discordgo"
 	"go.uber.org/zap"
@@ -23,7 +24,7 @@ var (
 
 func main() {
 	config, err := configs.LoadDiscordAuthrozationBotConfig()
-	logger := di.NewLogger(config.Logger.AppName, config.App.Environment, config.Logger.URL)
+	logger := di.NewLogger()
 
 	if err != nil {
 		logger.Fatalw("failed to load config", "error", err)
