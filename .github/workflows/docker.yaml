@@ -31,7 +31,6 @@ jobs:
             ENVIRONMENT=${{ vars.ENVIRONMENT }}
             INITIAL_SEEDERS=${{ vars.INITIAL_SEEDERS }}
             VOTING_DURATION_DAYS=${{ vars.VOTING_DURATION_DAYS }}
-            LOKI_URL=${{ secrets.LOKI_URL }}
             DB_URL=${{ secrets.DB_URL }}
             TELEGRAM_ACCESS_GOVERNANCE_BOT_TOKEN=${{ secrets.TELEGRAM_ACCESS_GOVERNANCE_BOT_TOKEN }}
             TELEGRAM_VOTE_BOT_TOKEN=${{ secrets.TELEGRAM_VOTE_BOT_TOKEN }}
@@ -48,7 +47,6 @@ jobs:
           file: ./deployments/proposal_state_service/Dockerfile
           build-args: |
             ENVIRONMENT=${{ vars.ENVIRONMENT }}
-            LOKI_URL=${{ secrets.LOKI_URL }}
             DB_URL=${{ secrets.DB_URL }}
             QUORUM=${{ vars.QUORUM }}
             MAX_REQUIRED_SEEDERS_COUNT=${{ vars.MAX_REQUIRED_SEEDERS_COUNT }}
@@ -68,7 +66,6 @@ jobs:
           file: ./deployments/authorization_bot/telegram/Dockerfile
           build-args: |
             ENVIRONMENT=${{ vars.ENVIRONMENT }}
-            LOKI_URL=${{ secrets.LOKI_URL }}
             DB_URL=${{ secrets.DB_URL }}
             TELEGRAM_AUTHORIZATION_BOT_TOKEN=${{ secrets.TELEGRAM_AUTHORIZATION_BOT_TOKEN }}
             DISCORD_AUTHORIZATION_BOT_TOKEN=${{ secrets.DISCORD_AUTHORIZATION_BOT_TOKEN }}
@@ -84,7 +81,6 @@ jobs:
           file: ./deployments/authorization_bot/discord/Dockerfile
           build-args: |
             ENVIRONMENT=${{ vars.ENVIRONMENT }}
-            LOKI_URL=${{ secrets.LOKI_URL }}
             DISCORD_AUTHORIZATION_BOT_TOKEN=${{ secrets.DISCORD_AUTHORIZATION_BOT_TOKEN }}
           push: true
           tags: ghcr.io/beniamiiin/access-governance-system:dab

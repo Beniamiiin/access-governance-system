@@ -10,7 +10,6 @@ import (
 type AccessGovernanceBotConfig struct {
 	App                 App
 	DB                  DB
-	Logger              Logger
 	AccessGovernanceBot Bot
 	VoteBot             Bot
 	VoteAPI             VoteAPI
@@ -27,7 +26,6 @@ func LoadAccessGovernanceBotConfig() (AccessGovernanceBotConfig, error) {
 
 	config.AccessGovernanceBot.Token = os.Getenv("TELEGRAM_ACCESS_GOVERNANCE_BOT_TOKEN")
 	config.VoteBot.Token = os.Getenv("TELEGRAM_VOTE_BOT_TOKEN")
-	config.Logger.AppName = "access-governance-bot"
 
 	return config, nil
 }

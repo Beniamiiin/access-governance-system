@@ -1,23 +1,15 @@
 version: '3.8'
 
-x-loki-logging: &loki-logging
-  logging:
-    driver: loki
-    options:
-      loki-url: $LOKI_URL
-
 services:
   access-governance-bot:
     image: ghcr.io/beniamiiin/access-governance-system:agb
     container_name: acs-bot
-    <<: *loki-logging
     networks:
       - acs-network
 
   vote-bot:
     image: ghcr.io/beniamiiin/ultimate-poll-bot:bot
     container_name: acs-vote-bot
-    <<: *loki-logging
     networks:
       - acs-network
 
@@ -26,14 +18,12 @@ services:
     container_name: acs-vote-bot-api
     ports:
       - "8000:8000"
-    <<: *loki-logging
     networks:
       - acs-network
 
   proposal-state-service:
     image: ghcr.io/beniamiiin/access-governance-system:pss
     container_name: acs-proposal-state-service
-    <<: *loki-logging
     networks:
       - acs-network
 

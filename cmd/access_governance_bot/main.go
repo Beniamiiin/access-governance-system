@@ -1,6 +1,14 @@
 package main
 
 import (
+	"context"
+	"errors"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
 	"access_governance_system/configs"
 	"access_governance_system/internal/db"
 	"access_governance_system/internal/db/repositories"
@@ -10,20 +18,13 @@ import (
 	"access_governance_system/internal/tg_bot/commands"
 	agbcommands "access_governance_system/internal/tg_bot/commands/access_governance_bot"
 	agbhandlers "access_governance_system/internal/tg_bot/handlers/access_governance_bot"
-	"context"
-	"errors"
-	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
-	"time"
 
 	"go.uber.org/zap"
 )
 
 func main() {
 	config, err := configs.LoadAccessGovernanceBotConfig()
-	logger := di.NewLogger(config.Logger.AppName, config.App.Environment, config.Logger.URL)
+	logger := di.NewLogger()
 
 	if err != nil {
 		logger.Fatalw("failed to load config", "error", err)
@@ -48,7 +49,8 @@ func main() {
 	voteService := services.NewVoteService(config.VoteAPI.URL)
 
 	tgbot.NewBot(
-		agbhandlers.NewAccessGovernanceBotCommandHandler(config, userRepository, proposalRepository, logger,
+		agbhandlers.NewAccessGovernanceBotCommandHandler(
+			config, userRepository, proposalRepository, logger,
 			[]commands.Command{
 				agbcommands.NewStartCommand(config, userRepository, logger),
 				agbcommands.NewCancelProposalCommand(config.App, userRepository, logger),
